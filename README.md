@@ -56,6 +56,7 @@ Choose a self-explaining name for your project.
 
 ## Members
 
+- Gabriela Gomes Cavalcanti Alves Monteiro
 - João Victor Silva Bezerra Nascimento
 - André Vitor Oliveira Brito
 
