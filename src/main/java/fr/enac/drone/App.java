@@ -3,6 +3,7 @@ package fr.enac.drone;
 import fr.enac.drone.controller.DroneController;
 import fr.enac.drone.model.DroneModel;
 import fr.enac.drone.view.SimulationView;
+import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -26,8 +27,15 @@ public class App extends Application {
         // Handle keyboard input and trigger view updates
         scene.setOnKeyPressed(event -> {
             controller.handleKeyPress(event.getCode());
-            view.render();
         });
+
+        AnimationTimer renderLoop = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                view.render();
+            }
+        };
+        renderLoop.start();
 
         // Stage configuration
         primaryStage.setTitle("FPV Drone Simulator");
