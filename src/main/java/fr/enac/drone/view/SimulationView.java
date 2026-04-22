@@ -6,6 +6,7 @@ import javafx.scene.PerspectiveCamera;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.SubScene;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Box;
@@ -21,11 +22,13 @@ public class SimulationView {
     private DroneModel model;
     private Box droneVisual;
     private PerspectiveCamera camera;
+    private FpvHudView hudView;
 
     public SimulationView(DroneModel model) {
         this.model = model;
         this.root = new BorderPane();
         init3DView();
+        render();
     }
 
     /**
@@ -65,9 +68,13 @@ public class SimulationView {
         AmbientLight light = new AmbientLight(Color.WHITE);
         sceneRoot.getChildren().add(light);
 
+        StackPane viewport = new StackPane();
+
         // 3D SubScene configuration
         SubScene subScene = new SubScene(sceneRoot, 800, 600, true, SceneAntialiasing.BALANCED);
         subScene.setFill(Color.LIGHTSKYBLUE);
+        subScene.widthProperty().bind(viewport.widthProperty());
+        subScene.heightProperty().bind(viewport.heightProperty());
 
         // FPV Camera configuration
         camera = new PerspectiveCamera(true);
@@ -76,7 +83,9 @@ public class SimulationView {
         camera.setFarClip(5000.0);
         subScene.setCamera(camera);
 
-        root.setCenter(subScene);
+        hudView = new FpvHudView();
+        viewport.getChildren().addAll(subScene, hudView);
+        root.setCenter(viewport);
     }
 
     public BorderPane getRoot() {
@@ -98,5 +107,7 @@ public class SimulationView {
         camera.setTranslateY(model.getY());
         camera.setTranslateZ(model.getZ() + 25); 
         camera.setRotate(model.getYaw());
+
+        hudView.update(model.getTelemetry());
     }
 }
