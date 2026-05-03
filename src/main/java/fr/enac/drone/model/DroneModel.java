@@ -18,55 +18,44 @@ public class DroneModel {
     private double speedKmh = 0;
     private long lastMovementNanos = 0;
 
-    // Vertical and Rotational movements (Left Analog Stick)
-    public void throttleUp() {
+    // Real-world physical constants
+    private static final double MAX_HORIZONTAL_SPEED = 25.0; // m/s
+    private static final double MAX_VERTICAL_SPEED = 8.0;    // m/s
+    private static final double YAW_RATE = 120.0;            // degrees/s
+
+    /**
+     * Updates the physical state of the drone using Kinematic physics.
+     */
+    public void updatePhysics(double pitchInput, double rollInput, double throttleInput, double deltaTime) {
+        // Store previous position for speed calculation
+        double previousX = x;
         double previousY = y;
-        this.y -= 5;
-        updateSpeed(x, previousY, z);
-    }
-
-    public void throttleDown() {
-        double previousY = y;
-        this.y += 5;
-        updateSpeed(x, previousY, z);
-    }
-
-    public void yawLeft() { this.yaw -= 5; }
-    public void yawRight() { this.yaw += 5; }
-
-    // Directional movements (Right Analog Stick)
-    // Uses trigonometry to align movement with the current heading (yaw)
-    public void pitchForward() {
-        double previousX = x;
         double previousZ = z;
-        this.x += 5 * Math.sin(Math.toRadians(yaw));
-        this.z += 5 * Math.cos(Math.toRadians(yaw));
-        updateSpeed(previousX, y, previousZ);
+
+        // Vector normalization for diagonal movement
+        double length = Math.sqrt(pitchInput * pitchInput + rollInput * rollInput);
+        if (length > 1.0) {
+            pitchInput /= length;
+            rollInput /= length;
+        }
+
+        // 2D Rotation matrix for Yaw direction
+        double radYaw = Math.toRadians(this.yaw);
+        double moveZ = (pitchInput * Math.cos(radYaw)) - (rollInput * Math.sin(radYaw));
+        double moveX = (pitchInput * Math.sin(radYaw)) + (rollInput * Math.cos(radYaw));
+
+        // Apply velocities scaled by the exact time elapsed
+        this.x += moveX * MAX_HORIZONTAL_SPEED * deltaTime;
+        this.z += moveZ * MAX_HORIZONTAL_SPEED * deltaTime;
+        this.y += throttleInput * MAX_VERTICAL_SPEED * deltaTime;
+
+        // Update speed based on actual movement
+        updateSpeed(previousX, previousY, previousZ);
     }
 
-    public void pitchBackward() {
-        double previousX = x;
-        double previousZ = z;
-        this.x -= 5 * Math.sin(Math.toRadians(yaw));
-        this.z -= 5 * Math.cos(Math.toRadians(yaw));
-        updateSpeed(previousX, y, previousZ);
-    }
-
-    public void rollLeft() {
-        double previousX = x;
-        double previousZ = z;
-        this.x -= 5 * Math.cos(Math.toRadians(yaw));
-        this.z += 5 * Math.sin(Math.toRadians(yaw));
-        updateSpeed(previousX, y, previousZ);
-    }
-
-    public void rollRight() {
-        double previousX = x;
-        double previousZ = z;
-        this.x += 5 * Math.cos(Math.toRadians(yaw));
-        this.z -= 5 * Math.sin(Math.toRadians(yaw));
-        updateSpeed(previousX, y, previousZ);
-    }
+    // Yaw rotation also scaled by time
+    public void yawLeft(double deltaTime) { this.yaw -= YAW_RATE * deltaTime; }
+    public void yawRight(double deltaTime) { this.yaw += YAW_RATE * deltaTime; }
 
     public double getX() { return x; }
     public double getY() { return y; }
