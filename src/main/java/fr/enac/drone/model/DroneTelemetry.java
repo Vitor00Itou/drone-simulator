@@ -5,7 +5,8 @@ package fr.enac.drone.model;
  */
 public record DroneTelemetry(
         double altitudeMeters,
-        double speedKmh,
+        double horizontalSpeedMs,
+        double verticalSpeedMs,
         double headingDegrees,
         double distanceMeters
 ) {
