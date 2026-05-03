@@ -31,9 +31,9 @@ public class CommandHelpPanel extends VBox {
 
         getChildren().addAll(
                 createCommandRow("W / S", "Altitude"),
-                createCommandRow("A / D", "Cap"),
-                createCommandRow("Up / Down", "Avancer / Reculer"),
-                createCommandRow("Left / Right", "Deplacement lateral")
+                createCommandRow("A / D", "Heading"),
+                createCommandRow("Up / Down", "Forward / Backward"),
+                createCommandRow("Left / Right", "Lateral Movement")
         );
     }
 

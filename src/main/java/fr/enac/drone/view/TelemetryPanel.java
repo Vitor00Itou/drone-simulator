@@ -15,8 +15,9 @@ import javafx.scene.paint.Color;
  */
 public class TelemetryPanel extends HBox {
     private final TelemetryItem altitudeItem = new TelemetryItem("ALT");
-    private final TelemetryItem speedItem = new TelemetryItem("SPD");
-    private final TelemetryItem headingItem = new TelemetryItem("CAP");
+    private final TelemetryItem horizontalSpeedItem = new TelemetryItem("HSPD");
+    private final TelemetryItem verticalSpeedItem = new TelemetryItem("VSPD");
+    private final TelemetryItem headingItem = new TelemetryItem("HDG");
     private final TelemetryItem distanceItem = new TelemetryItem("DIST");
 
     public TelemetryPanel() {
@@ -29,12 +30,13 @@ public class TelemetryPanel extends HBox {
                 new CornerRadii(14),
                 Insets.EMPTY
         )));
-        getChildren().addAll(altitudeItem, speedItem, headingItem, distanceItem);
+        getChildren().addAll(altitudeItem, horizontalSpeedItem, verticalSpeedItem, headingItem, distanceItem);
     }
 
     public void update(DroneTelemetry telemetry) {
         altitudeItem.setValue(String.format(Locale.US, "%.1f m", telemetry.altitudeMeters()));
-        speedItem.setValue(String.format(Locale.US, "%.1f km/h", telemetry.speedKmh()));
+        horizontalSpeedItem.setValue(String.format(Locale.US, "%.1f m/s", telemetry.horizontalSpeedMs()));
+        verticalSpeedItem.setValue(String.format(Locale.US, "%.1f m/s", telemetry.verticalSpeedMs()));
         headingItem.setValue(String.format(Locale.US, "%.0f\u00B0", telemetry.headingDegrees()));
         distanceItem.setValue(String.format(Locale.US, "%.1f m", telemetry.distanceMeters()));
     }
