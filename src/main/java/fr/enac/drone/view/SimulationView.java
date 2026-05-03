@@ -105,7 +105,7 @@ public class SimulationView {
         // Synchronize FPV camera with drone movement and orientation
         camera.setTranslateX(model.getX());
         camera.setTranslateY(model.getY());
-        camera.setTranslateZ(model.getZ() + 25); 
+        camera.setTranslateZ(model.getZ()); 
         camera.setRotate(model.getYaw());
 
         hudView.update(model.getTelemetry());
