@@ -1,6 +1,7 @@
 package fr.enac.drone.view;
 
 import fr.enac.drone.model.DroneModel;
+import fr.enac.drone.model.Obstacle;
 import javafx.scene.Group;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.SceneAntialiasing;
@@ -13,6 +14,9 @@ import javafx.scene.shape.Box;
 import javafx.scene.shape.Cylinder;
 import javafx.scene.AmbientLight;
 import javafx.scene.transform.Rotate;
+import javafx.scene.control.Button;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 
 /**
  * Handles the 3D rendering and FPV camera logic for the drone simulator.
@@ -23,6 +27,8 @@ public class SimulationView {
     private Box droneVisual;
     private PerspectiveCamera camera;
     private FpvHudView hudView;
+    private Group sceneRoot;
+    private Button settingsButton;
 
     public SimulationView(DroneModel model) {
         this.model = model;
@@ -35,7 +41,7 @@ public class SimulationView {
      * Initializes the 3D world, including the drone, environment, and lighting.
      */
     private void init3DView() {
-        Group sceneRoot = new Group();
+        sceneRoot = new Group();
         
         // Drone visual representation
         droneVisual = new Box(50, 50, 50);
@@ -54,15 +60,8 @@ public class SimulationView {
         floor.setTranslateY(30);
         sceneRoot.getChildren().add(floor);
 
-        // Static reference object for spatial orientation
-        Cylinder tower = new Cylinder(30, 200);
-        PhongMaterial towerMat = new PhongMaterial();
-        towerMat.setDiffuseColor(Color.ORANGE);
-        tower.setMaterial(towerMat);
-        tower.setTranslateX(150);
-        tower.setTranslateY(-70);
-        tower.setTranslateZ(500);
-        sceneRoot.getChildren().add(tower);
+        // Initializes and adds all obstacle visuals to the 3D scene
+        createObstacles();
 
         // Lighting
         AmbientLight light = new AmbientLight(Color.WHITE);
@@ -84,7 +83,21 @@ public class SimulationView {
         subScene.setCamera(camera);
 
         hudView = new FpvHudView();
-        viewport.getChildren().addAll(subScene, hudView);
+
+        settingsButton = new Button("⚙");
+        settingsButton.setStyle(
+            "-fx-background-color: rgba(67, 66, 80, 0.9);" +
+            "-fx-text-fill: white;" +
+            "-fx-font-size: 20px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-background-radius: 18;" +
+            "-fx-padding: 6 12 6 12;"
+        );
+
+        StackPane.setAlignment(settingsButton, Pos.TOP_RIGHT);
+        StackPane.setMargin(settingsButton, new Insets(24, 24, 0, 0));
+
+        viewport.getChildren().addAll(subScene, hudView, settingsButton);
         root.setCenter(viewport);
     }
 
@@ -109,5 +122,36 @@ public class SimulationView {
         camera.setRotate(model.getYaw());
 
         hudView.update(model.getTelemetry());
+    }
+
+    /**
+    * Creates and renders obstacle objects in the 3D scene based on the model data.
+    */
+    private void createObstacles() {
+        PhongMaterial obstacleMat = new PhongMaterial();
+        obstacleMat.setDiffuseColor(Color.ORANGE);
+
+        for (Obstacle obstacle : model.getObstacles()) {
+            Cylinder cylinder = new Cylinder(obstacle.getRadius(), obstacle.getHeight());
+            cylinder.setMaterial(obstacleMat);
+
+            cylinder.setTranslateX(obstacle.getX());
+            cylinder.setTranslateY(obstacle.getY());
+            cylinder.setTranslateZ(obstacle.getZ());
+
+            sceneRoot.getChildren().add(cylinder);
+        }
+    }
+
+    /**
+    * Refreshes the world by removing existing obstacles and regenerating them.
+    */
+    public void refreshWorld() {
+        sceneRoot.getChildren().removeIf(node -> node instanceof Cylinder);
+        createObstacles();
+    }
+
+    public Button getSettingsButton() {
+        return settingsButton;
     }
 }

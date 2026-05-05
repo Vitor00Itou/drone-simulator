@@ -3,6 +3,7 @@ package fr.enac.drone;
 import fr.enac.drone.controller.DroneController;
 import fr.enac.drone.model.DroneModel;
 import fr.enac.drone.view.SimulationView;
+import fr.enac.drone.view.SettingsView;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -34,6 +35,33 @@ public class App extends Application {
         // Stage configuration
         primaryStage.setTitle("FPV Drone Simulator");
         primaryStage.setScene(scene);
+
+        /**
+        * Handles the opening of the settings screen when the user clicks the settings button.
+        * Creates a new settings view and switches the scene.
+        */
+        view.getSettingsButton().setOnAction(event -> {
+            SettingsView newSettingsView = new SettingsView(model.getCurrentWorldMode());
+            Scene settingsScene = new Scene(newSettingsView, 800, 600);
+
+            // Handle back button: return to the simulation without applying changes
+            newSettingsView.getBackButton().setOnAction(backEvent -> {
+                primaryStage.setScene(scene);
+                view.getRoot().requestFocus();
+            });
+
+            // Handle save button: apply selected world mode and refresh the environment
+            newSettingsView.getSaveButton().setOnAction(saveEvent -> {
+                model.setWorldMode(newSettingsView.getSelectedWorldMode());
+                view.refreshWorld();
+
+                primaryStage.setScene(scene);
+                view.getRoot().requestFocus();
+            });
+
+            // Switch to the settings screen
+            primaryStage.setScene(settingsScene);
+        });
         
         // Request focus to ensure input capture on startup
         view.getRoot().requestFocus(); 
