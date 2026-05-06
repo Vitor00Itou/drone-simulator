@@ -41,6 +41,9 @@ public class DroneController {
         // Yaw passes the deltaTime directly
         if (activeKeys.contains(KeyCode.A)) model.yawLeft(deltaTime);
         if (activeKeys.contains(KeyCode.D)) model.yawRight(deltaTime);
+        
+        // Update yaw inertia (always called to apply drag when no input)
+        model.updateYaw(deltaTime);
 
         // Throttle
         if (activeKeys.contains(KeyCode.W)) throttleInput -= 1;
