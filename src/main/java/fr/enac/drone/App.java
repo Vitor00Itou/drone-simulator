@@ -2,6 +2,7 @@ package fr.enac.drone;
 
 import fr.enac.drone.controller.DroneController;
 import fr.enac.drone.model.DroneModel;
+import fr.enac.drone.model.World;
 import fr.enac.drone.view.SimulationView;
 import fr.enac.drone.view.SettingsView;
 import javafx.animation.AnimationTimer;
@@ -20,8 +21,9 @@ public class App extends Application {
 
         // Initialize MVC components
         DroneModel model = new DroneModel();
+        World worldModel = new World();
         DroneController controller = new DroneController(model);
-        SimulationView view = new SimulationView(model);
+        SimulationView view = new SimulationView(model, worldModel);
 
         // Configure the main scene
         Scene scene = new Scene(view.getRoot(), 800, 600);
@@ -41,7 +43,7 @@ public class App extends Application {
         * Creates a new settings view and switches the scene.
         */
         view.getSettingsButton().setOnAction(event -> {
-            SettingsView newSettingsView = new SettingsView(model.getCurrentWorldMode());
+            SettingsView newSettingsView = new SettingsView(worldModel.getCurrentWorldMode());
             Scene settingsScene = new Scene(newSettingsView, 800, 600);
 
             // Handle back button: return to the simulation without applying changes
@@ -52,7 +54,7 @@ public class App extends Application {
 
             // Handle save button: apply selected world mode and refresh the environment
             newSettingsView.getSaveButton().setOnAction(saveEvent -> {
-                model.setWorldMode(newSettingsView.getSelectedWorldMode());
+                worldModel.setWorldMode(newSettingsView.getSelectedWorldMode());
                 view.refreshWorld();
 
                 primaryStage.setScene(scene);

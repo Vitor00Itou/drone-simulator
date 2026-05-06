@@ -2,6 +2,7 @@ package fr.enac.drone.view;
 
 import fr.enac.drone.model.DroneModel;
 import fr.enac.drone.model.Obstacle;
+import fr.enac.drone.model.World;
 import javafx.scene.Group;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.SceneAntialiasing;
@@ -24,14 +25,16 @@ import javafx.geometry.Pos;
 public class SimulationView {
     private BorderPane root;
     private DroneModel model;
+    private World worldModel;
     private Box droneVisual;
     private PerspectiveCamera camera;
     private FpvHudView hudView;
     private Group sceneRoot;
     private Button settingsButton;
 
-    public SimulationView(DroneModel model) {
+    public SimulationView(DroneModel model, World worldModel) {
         this.model = model;
+        this.worldModel = worldModel;
         this.root = new BorderPane();
         init3DView();
         render();
@@ -131,7 +134,7 @@ public class SimulationView {
         PhongMaterial obstacleMat = new PhongMaterial();
         obstacleMat.setDiffuseColor(Color.ORANGE);
 
-        for (Obstacle obstacle : model.getObstacles()) {
+        for (Obstacle obstacle : worldModel.getObstacles()) {
             Cylinder cylinder = new Cylinder(obstacle.getRadius(), obstacle.getHeight());
             cylinder.setMaterial(obstacleMat);
 
