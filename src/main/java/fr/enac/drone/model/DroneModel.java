@@ -9,6 +9,8 @@ import fr.enac.drone.utils.MathUtils;
 public class DroneModel {
     private static final double METERS_PER_UNIT = 1.0;
 
+    private final World world = World.createDefault();
+
     private double x = 0;
     private double y = -30; // Initial altitude to avoid spawning inside the ground plane
     private double z = 0;
@@ -61,6 +63,7 @@ public class DroneModel {
     public double getY() { return y; }
     public double getZ() { return z; }
     public double getYaw() { return yaw; }
+    public World getWorld() { return world; }
 
     /**
      * Generates the current telemetry data for the HUD.

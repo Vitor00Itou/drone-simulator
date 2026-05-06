@@ -1,6 +1,7 @@
 package fr.enac.drone.view;
 
 import fr.enac.drone.model.DroneModel;
+import fr.enac.drone.model.Obstacle;
 import javafx.scene.Group;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.SceneAntialiasing;
@@ -54,15 +55,7 @@ public class SimulationView {
         floor.setTranslateY(30);
         sceneRoot.getChildren().add(floor);
 
-        // Static reference object for spatial orientation
-        Cylinder tower = new Cylinder(30, 200);
-        PhongMaterial towerMat = new PhongMaterial();
-        towerMat.setDiffuseColor(Color.ORANGE);
-        tower.setMaterial(towerMat);
-        tower.setTranslateX(150);
-        tower.setTranslateY(-70);
-        tower.setTranslateZ(500);
-        sceneRoot.getChildren().add(tower);
+        createObstacles(sceneRoot);
 
         // Lighting
         AmbientLight light = new AmbientLight(Color.WHITE);
@@ -91,6 +84,23 @@ public class SimulationView {
     public BorderPane getRoot() {
         return root;
     }
+
+    /**
+     * Creates the 3D representation for each obstacle declared in the world.
+     */
+    private void createObstacles(Group sceneRoot) {
+        PhongMaterial obstacleMat = new PhongMaterial();
+        obstacleMat.setDiffuseColor(Color.ORANGE);
+
+        for (Obstacle obstacle : model.getWorld().getObstacles()) {
+            Cylinder cylinder = new Cylinder(obstacle.getRadius(), obstacle.getHeight());
+            cylinder.setMaterial(obstacleMat);
+            cylinder.setTranslateX(obstacle.getX());
+            cylinder.setTranslateY(obstacle.getY());
+            cylinder.setTranslateZ(obstacle.getZ());
+            sceneRoot.getChildren().add(cylinder);
+        }
+    }
     
     /**
      * Synchronizes the visual objects and camera with the model's state.
@@ -108,6 +118,6 @@ public class SimulationView {
         camera.setTranslateZ(model.getZ()); 
         camera.setRotate(model.getYaw());
 
-        hudView.update(model.getTelemetry());
+        hudView.update(model);
     }
 }
