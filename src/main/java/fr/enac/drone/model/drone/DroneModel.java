@@ -1,4 +1,4 @@
-package fr.enac.drone.model;
+package fr.enac.drone.model.drone;
 
 import fr.enac.drone.utils.MathUtils;
 
@@ -135,10 +135,10 @@ public class DroneModel {
     }
 
     /**
-     * Save the current drone state to a WorldState object.
+     * Save the current drone state to a DroneState object.
      */
-    public fr.enac.drone.model.world.WorldState saveState() {
-        return new fr.enac.drone.model.world.WorldState(x, y, z, yaw, velocityX, velocityY, velocityZ, yawVelocity);
+    public fr.enac.drone.model.drone.DroneState saveState() {
+        return new fr.enac.drone.model.drone.DroneState(x, y, z, yaw, velocityX, velocityY, velocityZ, yawVelocity);
     }
 
     /**

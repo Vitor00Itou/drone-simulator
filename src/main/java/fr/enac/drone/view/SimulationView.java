@@ -1,8 +1,10 @@
 package fr.enac.drone.view;
 
-import fr.enac.drone.model.DroneModel;
+import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.world.WorldConfiguration;
+import fr.enac.drone.model.world.WorldObject;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.SubScene;
@@ -14,6 +16,7 @@ import javafx.scene.shape.Box;
 import javafx.scene.shape.Cylinder;
 import javafx.scene.AmbientLight;
 import javafx.scene.transform.Rotate;
+import java.util.Objects;
 
 /**
  * Handles the 3D rendering and FPV camera logic for the drone simulator.
@@ -27,8 +30,8 @@ public class SimulationView {
     private WorldConfiguration worldConfig;
 
     public SimulationView(DroneModel model, WorldConfiguration worldConfig) {
-        this.model = model;
-        this.worldConfig = worldConfig;
+        this.model = Objects.requireNonNull(model, "Model cannot be null");
+        this.worldConfig = Objects.requireNonNull(worldConfig, "World configuration cannot be null");
         this.root = new BorderPane();
         init3DView();
         render();
@@ -50,8 +53,8 @@ public class SimulationView {
         sceneRoot.getChildren().add(droneVisual);
 
         // Load all objects from world configuration
-        for (WorldConfiguration.WorldObject obj : worldConfig.objects) {
-            javafx.scene.Node visualObject = createVisualObject(obj);
+        for (WorldObject obj : worldConfig.getObjects()) {
+            Node visualObject = createVisualObject(obj);
             if (visualObject != null) {
                 sceneRoot.getChildren().add(visualObject);
             }
@@ -65,7 +68,7 @@ public class SimulationView {
 
         // 3D SubScene configuration
         SubScene subScene = new SubScene(sceneRoot, 800, 600, true, SceneAntialiasing.BALANCED);
-        subScene.setFill(Color.web(worldConfig.environment.skyColor));
+        subScene.setFill(Color.web(worldConfig.getEnvironment().getSkyColor()));
         subScene.widthProperty().bind(viewport.widthProperty());
         subScene.heightProperty().bind(viewport.heightProperty());
 
@@ -84,38 +87,38 @@ public class SimulationView {
     /**
      * Creates a visual 3D object from a WorldObject configuration.
      */
-    private javafx.scene.Node createVisualObject(WorldConfiguration.WorldObject obj) {
+    private Node createVisualObject(WorldObject obj) {
         PhongMaterial material = new PhongMaterial();
-        material.setDiffuseColor(Color.web(obj.color));
+        material.setDiffuseColor(Color.web(obj.getColor()));
 
-        javafx.scene.Node node = null;
+        Node node = null;
 
-        switch (obj.type.toLowerCase()) {
+        switch (obj.getType().toLowerCase()) {
             case "box":
-                Box box = new Box(obj.sizeX, obj.sizeY, obj.sizeZ);
+                Box box = new Box(obj.getSizeX(), obj.getSizeY(), obj.getSizeZ());
                 box.setMaterial(material);
                 node = box;
                 break;
             case "cylinder":
-                Cylinder cylinder = new Cylinder(obj.sizeX, obj.sizeY);
+                Cylinder cylinder = new Cylinder(obj.getSizeX(), obj.getSizeY());
                 cylinder.setMaterial(material);
                 node = cylinder;
                 break;
             case "plane":
                 // Ground plane - special handling
-                Box plane = new Box(obj.sizeX, obj.sizeY, obj.sizeZ);
+                Box plane = new Box(obj.getSizeX(), obj.getSizeY(), obj.getSizeZ());
                 plane.setMaterial(material);
                 node = plane;
                 break;
             default:
-                System.err.println("Unknown object type: " + obj.type);
+                System.err.println("Unknown object type: " + obj.getType());
                 return null;
         }
 
         if (node != null) {
-            node.setTranslateX(obj.posX);
-            node.setTranslateY(obj.posY);
-            node.setTranslateZ(obj.posZ);
+            node.setTranslateX(obj.getPosX());
+            node.setTranslateY(obj.getPosY());
+            node.setTranslateZ(obj.getPosZ());
         }
 
         return node;

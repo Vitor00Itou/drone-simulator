@@ -1,9 +1,9 @@
-package fr.enac.drone.model.world;
+package fr.enac.drone.model.drone;
 
 /**
- * Represents the complete state of the drone world that can be saved/loaded.
+ * Represents the current drone state in the world.
  */
-public class WorldState {
+public class DroneState {
     public double droneX;
     public double droneY;
     public double droneZ;
@@ -15,7 +15,7 @@ public class WorldState {
     public double yawVelocity;
 
     // Default constructor for JSON deserialization
-    public WorldState() {
+    public DroneState() {
         this.droneX = 0;
         this.droneY = -30;
         this.droneZ = 0;
@@ -26,8 +26,7 @@ public class WorldState {
         this.yawVelocity = 0;
     }
 
-    // Constructor with values
-    public WorldState(double droneX, double droneY, double droneZ, double droneYaw,
+    public DroneState(double droneX, double droneY, double droneZ, double droneYaw,
                       double velocityX, double velocityY, double velocityZ, double yawVelocity) {
         this.droneX = droneX;
         this.droneY = droneY;
@@ -41,7 +40,7 @@ public class WorldState {
 
     @Override
     public String toString() {
-        return "WorldState{" +
+        return "DroneState{" +
                 "droneX=" + droneX +
                 ", droneY=" + droneY +
                 ", droneZ=" + droneZ +

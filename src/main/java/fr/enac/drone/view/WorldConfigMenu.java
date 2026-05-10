@@ -6,7 +6,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
-import java.util.function.Consumer;
+import java.util.Objects;
+import java.util.function.BiConsumer;
 
 import fr.enac.drone.model.world.WorldConfiguration;
 import fr.enac.drone.model.world.WorldPersistence;
@@ -17,11 +18,11 @@ import fr.enac.drone.model.world.WorldPersistence;
 public class WorldConfigMenu extends Dialog<Void> {
     private ComboBox<String> configsCombo;
     private String currentConfigFilename;
-    private Consumer<WorldConfiguration> onConfigurationLoaded;
+    private BiConsumer<WorldConfiguration, String> onConfigurationLoaded;
 
-    public WorldConfigMenu(WorldConfiguration currentConfig, String currentConfigFilename, Consumer<WorldConfiguration> onConfigurationLoaded) {
+    public WorldConfigMenu(WorldConfiguration currentConfig, String currentConfigFilename, BiConsumer<WorldConfiguration, String> onConfigurationLoaded) {
         this.currentConfigFilename = currentConfigFilename;
-        this.onConfigurationLoaded = onConfigurationLoaded;
+        this.onConfigurationLoaded = Objects.requireNonNull(onConfigurationLoaded, "Callback cannot be null");
         this.setTitle("World Configuration");
         this.setWidth(600);
         this.setHeight(440);
@@ -84,12 +85,9 @@ public class WorldConfigMenu extends Dialog<Void> {
         }
 
         WorldConfiguration config = WorldPersistence.loadWorldConfiguration(selected);
-        if (config != null) {
-            this.currentConfigFilename = selected; 
-            
-            showInfo("World configuration loaded: " + selected);
+        if (config != null) {            
             if (onConfigurationLoaded != null) {
-                onConfigurationLoaded.accept(config);
+                onConfigurationLoaded.accept(config, selected);
             }
         }
     }
@@ -108,23 +106,11 @@ public class WorldConfigMenu extends Dialog<Void> {
         }
     }
 
-    private void showInfo(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Info");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    public String getSelectedFilename() {
-        return this.currentConfigFilename;
     }
 }

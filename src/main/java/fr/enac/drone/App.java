@@ -1,8 +1,10 @@
 package fr.enac.drone;
 
 import fr.enac.drone.controller.DroneController;
-import fr.enac.drone.model.DroneModel;
+import fr.enac.drone.model.drone.DroneModel;
+import fr.enac.drone.model.drone.DroneSpawn;
 import fr.enac.drone.model.world.WorldConfiguration;
+import fr.enac.drone.model.world.WorldPersistence;
 import fr.enac.drone.view.SimulationView;
 import fr.enac.drone.view.WorldConfigMenu;
 import javafx.animation.AnimationTimer;
@@ -13,6 +15,7 @@ import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import java.util.Objects;
 
 /**
  * Main entry point for the Drone Simulator application at ENAC.
@@ -20,8 +23,8 @@ import javafx.stage.Stage;
  */
 public class App extends Application {
     private static final String DEFAULT_WORLD_FILENAME = "world_default";
-    private String currentWorldFilename = DEFAULT_WORLD_FILENAME;
 
+    private String currentWorldFilename = DEFAULT_WORLD_FILENAME;
     private Scene scene;
     private BorderPane root;
     private MenuBar menuBar;
@@ -58,28 +61,22 @@ public class App extends Application {
 
     private void loadOrCreateDefaultWorld() {
         try {
-            String[] saves = fr.enac.drone.model.world.WorldPersistence.listSaves();
-            boolean defaultExists = false;
-            for (String save : saves) {
-                if (DEFAULT_WORLD_FILENAME.equals(save)) {
-                    defaultExists = true;
-                    break;
-                }
+            // Try to load existing default world
+            worldConfig = WorldPersistence.loadWorldConfiguration(DEFAULT_WORLD_FILENAME);
+            if (worldConfig != null) {
+                return;
             }
+        } catch (Exception e) {
+            System.err.println("Error loading default world: " + e.getMessage());
+        }
 
-            if (defaultExists) {
-                WorldConfiguration loaded = fr.enac.drone.model.world.WorldPersistence.loadWorldConfiguration(DEFAULT_WORLD_FILENAME);
-                if (loaded != null) {
-                    worldConfig = loaded;
-                    return;
-                }
-            }
-
-            // Create default world configuration if missing
+        // Create and save default world configuration
+        try {
             worldConfig = new WorldConfiguration("Default World");
-            fr.enac.drone.model.world.WorldPersistence.saveWorldConfiguration(worldConfig, DEFAULT_WORLD_FILENAME);
+            WorldPersistence.saveWorldConfiguration(worldConfig, DEFAULT_WORLD_FILENAME);
         } catch (Exception ex) {
-            System.err.println("Failed to load or create default world: " + ex.getMessage());
+            System.err.println("Failed to create/save default world: " + ex.getMessage());
+            // Fallback: Create in-memory default world
             worldConfig = new WorldConfiguration("Default World");
         }
     }
@@ -88,35 +85,47 @@ public class App extends Application {
      * Initializes or reinitializes the simulation with current world configuration.
      */
     private void initializeSimulation() {
-        // Stop existing game loop if running
+        stopGameLoop();
+        createMvcComponents();
+        setupEventHandlers();
+        startGameLoop();
+    }
+
+    private void stopGameLoop() {
         if (gameLoop != null) {
             gameLoop.stop();
         }
-        
+    }
+
+    private void createMvcComponents() {
         // Create new MVC components
         model = new DroneModel();
         controller = new DroneController(model);
         view = new SimulationView(model, worldConfig);
         
         // Set drone spawn position from world configuration
+        DroneSpawn spawn = worldConfig.getDroneSpawn();
         model.setSpawnPosition(
-            worldConfig.droneSpawn.posX,
-            worldConfig.droneSpawn.posY,
-            worldConfig.droneSpawn.posZ,
-            worldConfig.droneSpawn.yaw
+            spawn.getPosX(),
+            spawn.getPosY(),
+            spawn.getPosZ(),
+            spawn.getYaw()
         );
         
         // Update the scene center
         root.setCenter(view.getRoot());
+    }
+
+    private void setupEventHandlers() {
+        // Request focus
+        Objects.requireNonNull(view, "View cannot be null").getRoot().requestFocus();
         
         // Register input handlers
         scene.setOnKeyPressed(event -> controller.addKey(event.getCode()));
         scene.setOnKeyReleased(event -> controller.removeKey(event.getCode()));
-        
-        // Request focus
-        view.getRoot().requestFocus();
-        
-        // Start new game loop
+    }
+
+    private void startGameLoop() {
         gameLoop = new AnimationTimer() {
             private long lastUpdate = 0;
 
@@ -144,16 +153,20 @@ public class App extends Application {
         menuBar = new MenuBar();
         Menu configMenu = new Menu("Configuration");
         MenuItem worldConfigItem = new MenuItem("World Configuration");
-        worldConfigItem.setOnAction(e -> {
-            WorldConfigMenu dialog = new WorldConfigMenu(worldConfig, currentWorldFilename, loadedConfig -> {
-                worldConfig = loadedConfig;
-                initializeSimulation();
-            });
-            dialog.showAndWait();
-            this.currentWorldFilename = dialog.getSelectedFilename();
-        });
+        worldConfigItem.setOnAction(e -> handleWorldConfigurationMenu());
         configMenu.getItems().add(worldConfigItem);
         menuBar.getMenus().add(configMenu);
+    }
+
+    private void handleWorldConfigurationMenu() {
+        WorldConfigMenu dialog = new WorldConfigMenu(worldConfig, currentWorldFilename, this::handleWorldLoaded);
+        dialog.showAndWait();
+    }
+
+    private void handleWorldLoaded(WorldConfiguration config, String filename) {
+        this.worldConfig = Objects.requireNonNull(config, "Loaded configuration cannot be null");
+        this.currentWorldFilename = Objects.requireNonNull(filename, "Filename cannot be null");
+        this.initializeSimulation();
     }
 
     public static void main(String[] args) {
