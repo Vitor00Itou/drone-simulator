@@ -13,8 +13,11 @@ import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Top-down map of the simulation world, showing the drone and obstacles.
+ * Top-down map of the simulation world, showing the drone, obstacles, and the flight trail.
  */
 public class MiniMapView extends StackPane {
     private static final double SIZE = 180.0;
@@ -23,7 +26,16 @@ public class MiniMapView extends StackPane {
     private static final double DRONE_MARKER_SIZE = 6.0;
     private static final double DEFAULT_WORLD_SIZE = 5000.0;
 
+    // Trail settings
+    private static final double TRAIL_MIN_DISTANCE = 1.0;   // world units between recorded points
+    private static final int MAX_TRAIL_POINTS = 2000;       // prevent memory issues
+
     private final Canvas canvas = new Canvas(SIZE, SIZE);
+
+    // Flight path history: each element is [worldX, worldZ]
+    private final List<double[]> trailPoints = new ArrayList<>();
+    private double lastTrailX, lastTrailZ;
+    private boolean trailInitialized = false;
 
     public MiniMapView() {
         setMinSize(SIZE, SIZE);
@@ -50,13 +62,74 @@ public class MiniMapView extends StackPane {
         double scale = mapSize / getWorldSize(worldConfig);
 
         gc.clearRect(0, 0, SIZE, SIZE);
+
+        // 1. Update and record the drone's position for the trail
+        updateTrail(model);
+
+        // 2. Draw background
         drawMapSurface(gc, worldConfig);
         drawGrid(gc, mapSize);
+
+        // 3. Draw the flight trail (semi-transparent, so it doesn't hide objects)
+        drawTrail(gc, center, scale);
+
+        // 4. Draw static world elements
         drawHomeMarker(gc, center);
         drawWorldObjects(gc, worldConfig, center, scale);
+
+        // 5. Draw the drone marker on top of everything
         drawDroneMarker(gc, model, center, scale);
     }
 
+    private void updateTrail(DroneModel model) {
+        double currentX = model.getX();
+        double currentZ = model.getZ();
+
+        if (!trailInitialized) {
+            trailPoints.add(new double[]{currentX, currentZ});
+            lastTrailX = currentX;
+            lastTrailZ = currentZ;
+            trailInitialized = true;
+            return;
+        }
+
+        double dx = currentX - lastTrailX;
+        double dz = currentZ - lastTrailZ;
+        if (dx * dx + dz * dz >= TRAIL_MIN_DISTANCE * TRAIL_MIN_DISTANCE) {
+            // Limit trail length
+            if (trailPoints.size() >= MAX_TRAIL_POINTS) {
+                trailPoints.remove(0);
+            }
+            trailPoints.add(new double[]{currentX, currentZ});
+            lastTrailX = currentX;
+            lastTrailZ = currentZ;
+        }
+    }
+
+    private void drawTrail(GraphicsContext gc, double center, double scale) {
+        if (trailPoints.size() < 2) {
+            return;
+        }
+
+        gc.setStroke(Color.rgb(255, 255, 100, 0.55)); // soft yellow, not too opaque
+        gc.setLineWidth(1.5);
+        gc.beginPath();
+
+        for (int i = 0; i < trailPoints.size(); i++) {
+            double[] pt = trailPoints.get(i);
+            double sx = toScreenX(pt[0], center, scale);
+            double sy = toScreenY(pt[1], center, scale);
+
+            if (i == 0) {
+                gc.moveTo(sx, sy);
+            } else {
+                gc.lineTo(sx, sy);
+            }
+        }
+        gc.stroke();
+    }
+
+    // ----- The methods below remain unchanged from the original -----
     private void drawMapSurface(GraphicsContext gc, WorldConfiguration worldConfig) {
         Color groundColor = getGroundColor(worldConfig);
         gc.setFill(groundColor.deriveColor(0, 0.85, 0.72, 0.78));
