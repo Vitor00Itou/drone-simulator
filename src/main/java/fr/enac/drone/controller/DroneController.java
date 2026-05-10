@@ -1,9 +1,10 @@
 package fr.enac.drone.controller;
 
-import fr.enac.drone.model.DroneModel;
 import javafx.scene.input.KeyCode;
 import java.util.HashSet;
 import java.util.Set;
+
+import fr.enac.drone.model.drone.DroneModel;
 
 /**
  * Tracks active keys and processes continuous movement logic 

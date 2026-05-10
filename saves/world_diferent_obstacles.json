@@ -1,0 +1,77 @@
+{
+  "worldName" : "Default World",
+  "droneSpawn" : {
+    "posX" : 0.0,
+    "posY" : -30.0,
+    "posZ" : 0.0,
+    "yaw" : 0.0
+  },
+  "objects" : [ {
+    "name" : "Ground",
+    "type" : "plane",
+    "posX" : 0.0,
+    "posY" : 0.0,
+    "posZ" : 0.0,
+    "sizeX" : 5000.0,
+    "sizeY" : 1.0,
+    "sizeZ" : 5000.0,
+    "color" : "#228B22"
+  }, {
+    "name" : "Reference Tower",
+    "type" : "cylinder",
+    "posX" : 150.0,
+    "posY" : -70.0,
+    "posZ" : 500.0,
+    "sizeX" : 30.0,
+    "sizeY" : 200.0,
+    "sizeZ" : 30.0,
+    "color" : "#FFA500"
+  }, {
+    "name" : "Example Cube",
+    "type" : "box",
+    "posX" : -200.0,
+    "posY" : -45.0,
+    "posZ" : 300.0,
+    "sizeX" : 50.0,
+    "sizeY" : 50.0,
+    "sizeZ" : 50.0,
+    "color" : "#FF0000"
+  }, {
+    "name" : "Example Rectangle",
+    "type" : "box",
+    "posX" : 300.0,
+    "posY" : -40.0,
+    "posZ" : -200.0,
+    "sizeX" : 80.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 120.0,
+    "color" : "#0000FF"
+  }, {
+    "name" : "Small Cylinder",
+    "type" : "cylinder",
+    "posX" : -100.0,
+    "posY" : -35.0,
+    "posZ" : -400.0,
+    "sizeX" : 20.0,
+    "sizeY" : 50.0,
+    "sizeZ" : 20.0,
+    "color" : "#00FF00"
+  }, {
+    "name" : "Tall Box",
+    "type" : "box",
+    "posX" : 400.0,
+    "posY" : -60.0,
+    "posZ" : 600.0,
+    "sizeX" : 30.0,
+    "sizeY" : 120.0,
+    "sizeZ" : 30.0,
+    "color" : "#FFFF00"
+  } ],
+  "environment" : {
+    "skyColor" : "#87CEEB",
+    "groundColor" : "#228B22",
+    "gravity" : 9.81,
+    "showGrid" : true,
+    "showTower" : true
+  }
+}

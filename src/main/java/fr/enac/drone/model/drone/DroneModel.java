@@ -1,4 +1,4 @@
-package fr.enac.drone.model;
+package fr.enac.drone.model.drone;
 
 import fr.enac.drone.utils.MathUtils;
 
@@ -132,5 +132,27 @@ public class DroneModel {
         double verticalSpeedMs = -velocityY; // Invert sign: positive = up, negative = down
 
         return new DroneTelemetry(altitudeMeters, horizontalSpeedMs, verticalSpeedMs, headingDegrees, distanceMeters);
+    }
+
+    /**
+     * Save the current drone state to a DroneState object.
+     */
+    public fr.enac.drone.model.drone.DroneState saveState() {
+        return new fr.enac.drone.model.drone.DroneState(x, y, z, yaw, velocityX, velocityY, velocityZ, yawVelocity);
+    }
+
+    /**
+     * Sets the drone's initial spawn position.
+     */
+    public void setSpawnPosition(double x, double y, double z, double yaw) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.yaw = yaw;
+        // Reset velocities when spawning
+        this.velocityX = 0;
+        this.velocityY = 0;
+        this.velocityZ = 0;
+        this.yawVelocity = 0;
     }
 }

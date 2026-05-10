@@ -1,0 +1,37 @@
+{
+  "worldName" : "Default World",
+  "droneSpawn" : {
+    "posX" : 0.0,
+    "posY" : -30.0,
+    "posZ" : 0.0,
+    "yaw" : 0.0
+  },
+  "objects" : [ {
+    "name" : "Ground",
+    "type" : "plane",
+    "posX" : 0.0,
+    "posY" : 0.0,
+    "posZ" : 0.0,
+    "sizeX" : 5000.0,
+    "sizeY" : 1.0,
+    "sizeZ" : 5000.0,
+    "color" : "#228B22"
+  }, {
+    "name" : "Reference Tower",
+    "type" : "cylinder",
+    "posX" : 150.0,
+    "posY" : -70.0,
+    "posZ" : 500.0,
+    "sizeX" : 30.0,
+    "sizeY" : 200.0,
+    "sizeZ" : 30.0,
+    "color" : "#FFA500"
+  } ],
+  "environment" : {
+    "skyColor" : "#87CEEB",
+    "groundColor" : "#228B22",
+    "gravity" : 9.81,
+    "showGrid" : true,
+    "showTower" : true
+  }
+}
