@@ -10,9 +10,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
-/**
- * Two-dimensional FPV overlay displayed above the 3D scene.
- */
+import java.util.function.Consumer;
+
 public class FpvHudView extends BorderPane {
     private final TelemetryPanel telemetryPanel;
     private final MiniMapView miniMapView;
@@ -22,7 +21,12 @@ public class FpvHudView extends BorderPane {
         CommandHelpPanel commandHelpPanel = new CommandHelpPanel();
         miniMapView = new MiniMapView();
 
-        setMouseTransparent(true);
+        // On ne met plus setMouseTransparent(true) globalement.
+        // On rend transparents seulement les panneaux qui ne doivent pas capter les clics.
+        telemetryPanel.setMouseTransparent(true);
+        commandHelpPanel.setMouseTransparent(true);
+        // Le minimap reste cliquable (pas de setMouseTransparent)
+
         setPickOnBounds(false);
 
         setTop(telemetryPanel);
@@ -43,5 +47,14 @@ public class FpvHudView extends BorderPane {
         DroneTelemetry telemetry = model.getTelemetry();
         telemetryPanel.update(telemetry);
         miniMapView.render(model, worldConfig);
+    }
+
+    public void setOnMinimapTargetClicked(Consumer<double[]> callback) {
+        miniMapView.setOnTargetClicked(callback);
+    }
+
+    // Méthode pour effacer la cible (si besoin)
+    public void clearMinimapTarget() {
+        miniMapView.clearTarget();
     }
 }
