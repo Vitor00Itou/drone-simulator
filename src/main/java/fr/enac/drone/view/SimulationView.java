@@ -127,7 +127,7 @@ public class SimulationView {
     public BorderPane getRoot() {
         return root;
     }
-    
+
     /**
      * Synchronizes the visual objects and camera with the model's state.
      */
@@ -144,6 +144,6 @@ public class SimulationView {
         camera.setTranslateZ(model.getZ()); 
         camera.setRotate(model.getYaw());
 
-        hudView.update(model.getTelemetry());
+        hudView.update(model, worldConfig);
     }
 }
