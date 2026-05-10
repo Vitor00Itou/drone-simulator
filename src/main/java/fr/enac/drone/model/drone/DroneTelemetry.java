@@ -1,4 +1,4 @@
-package fr.enac.drone.model;
+package fr.enac.drone.model.drone;
 
 /**
  * Immutable snapshot of the values displayed in the FPV telemetry HUD.

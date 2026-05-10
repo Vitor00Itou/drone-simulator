@@ -1,7 +1,8 @@
 package fr.enac.drone.view;
 
-import fr.enac.drone.model.DroneTelemetry;
 import java.util.Locale;
+
+import fr.enac.drone.model.drone.DroneTelemetry;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.Background;
