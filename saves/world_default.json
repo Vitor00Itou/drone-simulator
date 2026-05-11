@@ -15,7 +15,8 @@
     "sizeX" : 5000.0,
     "sizeY" : 1.0,
     "sizeZ" : 5000.0,
-    "color" : "#228B22"
+    "color" : "#228B22",
+    "texture" : "ground_grass.png"
   }, {
     "name" : "Reference Tower",
     "type" : "cylinder",
@@ -25,7 +26,8 @@
     "sizeX" : 30.0,
     "sizeY" : 200.0,
     "sizeZ" : 30.0,
-    "color" : "#FFA500"
+    "color" : "#FFA500",
+    "texture" : "obstacle_metal.png"
   } ],
   "environment" : {
     "skyColor" : "#87CEEB",

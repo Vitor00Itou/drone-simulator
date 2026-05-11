@@ -15,7 +15,8 @@
     "sizeX" : 5000.0,
     "sizeY" : 1.0,
     "sizeZ" : 5000.0,
-    "color" : "#8B4513"
+    "color" : "#8B4513",
+    "texture" : "ground_dirt.png"
   }, {
     "name" : "Obstacle 1",
     "type" : "box",
@@ -25,7 +26,8 @@
     "sizeX" : 40.0,
     "sizeY" : 50.0,
     "sizeZ" : 40.0,
-    "color" : "#FF4500"
+    "color" : "#FF4500",
+    "texture" : "obstacle_concrete.png"
   }, {
     "name" : "Obstacle 2",
     "type" : "cylinder",
@@ -35,7 +37,8 @@
     "sizeX" : 25.0,
     "sizeY" : 60.0,
     "sizeZ" : 25.0,
-    "color" : "#32CD32"
+    "color" : "#32CD32",
+    "texture" : "obstacle_metal.png"
   }, {
     "name" : "Gate",
     "type" : "box",
@@ -45,7 +48,8 @@
     "sizeX" : 100.0,
     "sizeY" : 30.0,
     "sizeZ" : 5.0,
-    "color" : "#FFD700"
+    "color" : "#FFD700",
+    "texture" : "target_marker.png"
   }, {
     "name" : "Landing Pad",
     "type" : "cylinder",
@@ -55,7 +59,8 @@
     "sizeX" : 50.0,
     "sizeY" : 10.0,
     "sizeZ" : 50.0,
-    "color" : "#FFFFFF"
+    "color" : "#FFFFFF",
+    "texture" : "target_marker.png"
   } ],
   "environment" : {
     "skyColor" : "#4169E1",

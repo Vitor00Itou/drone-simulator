@@ -1,0 +1,182 @@
+{
+  "worldName" : "Morgan Freeman Course",
+  "droneSpawn" : {
+    "posX" : 0.0,
+    "posY" : -50.0,
+    "posZ" : -220.0,
+    "yaw" : 0.0
+  },
+  "objects" : [ {
+    "name" : "Brown Ground",
+    "type" : "plane",
+    "posX" : 0.0,
+    "posY" : 0.0,
+    "posZ" : 0.0,
+    "sizeX" : 5000.0,
+    "sizeY" : 1.0,
+    "sizeZ" : 5000.0,
+    "color" : "#8B4513",
+    "texture" : "ground_dirt.png"
+  }, {
+    "name" : "Morgan Monolith",
+    "type" : "box",
+    "posX" : -240.0,
+    "posY" : -65.0,
+    "posZ" : 120.0,
+    "sizeX" : 55.0,
+    "sizeY" : 130.0,
+    "sizeZ" : 40.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Pillar",
+    "type" : "cylinder",
+    "posX" : 150.0,
+    "posY" : -80.0,
+    "posZ" : 180.0,
+    "sizeX" : 30.0,
+    "sizeY" : 160.0,
+    "sizeZ" : 30.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Low Slab",
+    "type" : "box",
+    "posX" : -70.0,
+    "posY" : -17.5,
+    "posZ" : 300.0,
+    "sizeX" : 150.0,
+    "sizeY" : 35.0,
+    "sizeZ" : 28.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Landing Disk",
+    "type" : "cylinder",
+    "posX" : 260.0,
+    "posY" : -6.0,
+    "posZ" : 380.0,
+    "sizeX" : 70.0,
+    "sizeY" : 12.0,
+    "sizeZ" : 70.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Wall",
+    "type" : "box",
+    "posX" : -300.0,
+    "posY" : -45.0,
+    "posZ" : 520.0,
+    "sizeX" : 190.0,
+    "sizeY" : 90.0,
+    "sizeZ" : 18.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Needle",
+    "type" : "cylinder",
+    "posX" : 20.0,
+    "posY" : -110.0,
+    "posZ" : 560.0,
+    "sizeX" : 15.0,
+    "sizeY" : 220.0,
+    "sizeZ" : 15.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Cube",
+    "type" : "box",
+    "posX" : 250.0,
+    "posY" : -35.0,
+    "posZ" : 640.0,
+    "sizeX" : 70.0,
+    "sizeY" : 70.0,
+    "sizeZ" : 70.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Arch Left Post",
+    "type" : "box",
+    "posX" : -80.0,
+    "posY" : -50.0,
+    "posZ" : 820.0,
+    "sizeX" : 22.0,
+    "sizeY" : 100.0,
+    "sizeZ" : 22.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Arch Right Post",
+    "type" : "box",
+    "posX" : 80.0,
+    "posY" : -50.0,
+    "posZ" : 820.0,
+    "sizeX" : 22.0,
+    "sizeY" : 100.0,
+    "sizeZ" : 22.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Arch Beam",
+    "type" : "box",
+    "posX" : 0.0,
+    "posY" : -112.5,
+    "posZ" : 820.0,
+    "sizeX" : 190.0,
+    "sizeY" : 25.0,
+    "sizeZ" : 24.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Fat Column",
+    "type" : "cylinder",
+    "posX" : -230.0,
+    "posY" : -45.0,
+    "posZ" : 1000.0,
+    "sizeX" : 48.0,
+    "sizeY" : 90.0,
+    "sizeZ" : 48.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Tall Panel",
+    "type" : "box",
+    "posX" : 170.0,
+    "posY" : -85.0,
+    "posZ" : 1060.0,
+    "sizeX" : 32.0,
+    "sizeY" : 170.0,
+    "sizeZ" : 120.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Thin Rail",
+    "type" : "box",
+    "posX" : 0.0,
+    "posY" : -22.5,
+    "posZ" : 1220.0,
+    "sizeX" : 360.0,
+    "sizeY" : 45.0,
+    "sizeZ" : 18.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  }, {
+    "name" : "Morgan Finish Platform",
+    "type" : "cylinder",
+    "posX" : 0.0,
+    "posY" : -10.0,
+    "posZ" : 1450.0,
+    "sizeX" : 110.0,
+    "sizeY" : 20.0,
+    "sizeZ" : 110.0,
+    "color" : "#FFFFFF",
+    "texture" : "morgan_freeman.jpg"
+  } ],
+  "environment" : {
+    "skyColor" : "#4169E1",
+    "groundColor" : "#8B4513",
+    "gravity" : 9.81,
+    "showGrid" : true,
+    "showTower" : false
+  }
+}

@@ -28,6 +28,7 @@ import java.util.function.Consumer;
  * The SubScene is bound to fill the entire window.
  */
 public class SimulationView {
+    private static final double GROUND_TEXTURE_TILE_SIZE = 500.0;
 
     private final BorderPane root;
 
@@ -40,6 +41,8 @@ public class SimulationView {
     private final FpvHudView hudView;
 
     private final WorldConfiguration worldConfig;
+
+    private final SceneMaterialFactory materialFactory;
 
     public SimulationView(
             DroneModel model,
@@ -59,6 +62,7 @@ public class SimulationView {
                 );
 
         this.root = new BorderPane();
+        this.materialFactory = new SceneMaterialFactory();
 
         // ── 3D scene root ──────────────────────────────────────────────
         Group sceneRoot = new Group();
@@ -67,13 +71,7 @@ public class SimulationView {
         droneVisual = new Box(50, 50, 50);
 
         droneVisual.setRotationAxis(Rotate.Y_AXIS);
-
-        PhongMaterial droneMat = new PhongMaterial();
-
-        droneMat.setDiffuseColor(Color.RED);
-
-        droneVisual.setMaterial(droneMat);
-
+        droneVisual.setMaterial(materialFactory.createDroneMaterial());
         sceneRoot.getChildren().add(droneVisual);
 
         // ── Load world objects ─────────────────────────────────────────
@@ -163,57 +161,26 @@ public class SimulationView {
      * Creates visual objects from world configuration.
      */
     private Node createVisualObject(WorldObject obj) {
-
-        Color baseColor = Color.web(obj.getColor());
-
-        PhongMaterial material = new PhongMaterial();
-        material.setDiffuseColor(baseColor);
-        material.setSpecularColor(baseColor.brighter());
-        material.setSpecularPower(24);
-
         Node node = null;
 
         switch (obj.getType().toLowerCase()) {
 
             case "box":
-
-                Box box = new Box(
-                        obj.getSizeX(),
-                        obj.getSizeY(),
-                        obj.getSizeZ()
-                );
-
-                box.setMaterial(material);
-
+                Box box = new Box(obj.getSizeX(), obj.getSizeY(), obj.getSizeZ());
+                box.setMaterial(materialFactory.getMaterial(obj));
                 node = box;
 
                 break;
 
             case "cylinder":
-
-                Cylinder cylinder = new Cylinder(
-                        obj.getSizeX(),
-                        obj.getSizeY()
-                );
-
-                cylinder.setMaterial(material);
-
+                Cylinder cylinder = new Cylinder(obj.getSizeX(), obj.getSizeY());
+                cylinder.setMaterial(materialFactory.getMaterial(obj));
                 node = cylinder;
 
                 break;
 
             case "plane":
-
-                Box plane = new Box(
-                        obj.getSizeX(),
-                        obj.getSizeY(),
-                        obj.getSizeZ()
-                );
-
-                plane.setMaterial(material);
-
-                node = plane;
-
+                node = createGroundPlane(obj);
                 break;
 
             default:
@@ -233,6 +200,33 @@ public class SimulationView {
         node.setTranslateZ(obj.getPosZ());
 
         return node;
+    }
+
+    private Group createGroundPlane(WorldObject obj) {
+        Group ground = new Group();
+        PhongMaterial groundMaterial = materialFactory.getMaterial(obj);
+        int tilesX = Math.max(1, (int) Math.ceil(obj.getSizeX() / GROUND_TEXTURE_TILE_SIZE));
+        int tilesZ = Math.max(1, (int) Math.ceil(obj.getSizeZ() / GROUND_TEXTURE_TILE_SIZE));
+        double startX = -obj.getSizeX() / 2.0;
+        double startZ = -obj.getSizeZ() / 2.0;
+
+        for (int x = 0; x < tilesX; x++) {
+            double tileWidth = Math.min(GROUND_TEXTURE_TILE_SIZE, obj.getSizeX() - x * GROUND_TEXTURE_TILE_SIZE);
+            double tileCenterX = startX + x * GROUND_TEXTURE_TILE_SIZE + tileWidth / 2.0;
+
+            for (int z = 0; z < tilesZ; z++) {
+                double tileDepth = Math.min(GROUND_TEXTURE_TILE_SIZE, obj.getSizeZ() - z * GROUND_TEXTURE_TILE_SIZE);
+                double tileCenterZ = startZ + z * GROUND_TEXTURE_TILE_SIZE + tileDepth / 2.0;
+
+                Box tile = new Box(tileWidth, obj.getSizeY(), tileDepth);
+                tile.setMaterial(groundMaterial);
+                tile.setTranslateX(tileCenterX);
+                tile.setTranslateZ(tileCenterZ);
+                ground.getChildren().add(tile);
+            }
+        }
+
+        return ground;
     }
 
     public BorderPane getRoot() {

@@ -7,15 +7,19 @@ import javafx.geometry.Insets;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.ImagePattern;
+import javafx.scene.paint.Paint;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -28,11 +32,14 @@ public class MiniMapView extends StackPane {
     private static final int GRID_LINE_COUNT = 4;
     private static final double DRONE_MARKER_SIZE = 6.0;
     private static final double DEFAULT_WORLD_SIZE = 5000.0;
+    private static final double GROUND_TEXTURE_TILE_SIZE = 500.0;
+    private static final Color FALLBACK_MATERIAL_COLOR = Color.web("#B0B0B0");
 
     private static final double TRAIL_MIN_DISTANCE = 1.0;
     private static final int MAX_TRAIL_POINTS = 2000;
 
     private final Canvas canvas = new Canvas(SIZE, SIZE);
+    private final SceneMaterialFactory materialFactory = new SceneMaterialFactory();
     private final List<double[]> trailPoints = new ArrayList<>();
     private double lastTrailX, lastTrailZ;
     private boolean trailInitialized = false;
@@ -101,7 +108,7 @@ public class MiniMapView extends StackPane {
         gc.clearRect(0, 0, SIZE, SIZE);
 
         updateTrail(model);
-        drawMapSurface(gc, worldConfig);
+        drawMapSurface(gc, worldConfig, currentScale);
         drawGrid(gc, mapSize);
         drawTrail(gc, center, currentScale);
         drawHomeMarker(gc, center);
@@ -165,9 +172,11 @@ public class MiniMapView extends StackPane {
         gc.strokeLine(sx, sy - size, sx, sy + size);
     }
 
-    private void drawMapSurface(GraphicsContext gc, WorldConfiguration worldConfig) {
-        Color groundColor = getGroundColor(worldConfig);
-        gc.setFill(groundColor.deriveColor(0, 0.85, 0.72, 0.78));
+    private void drawMapSurface(GraphicsContext gc, WorldConfiguration worldConfig, double scale) {
+        WorldObject groundPlane = getGroundPlane(worldConfig);
+        Color groundColor = getGroundColor(worldConfig, groundPlane);
+
+        gc.setFill(getGroundPaint(groundPlane, groundColor, scale));
         gc.fillRoundRect(MAP_INSET, MAP_INSET, SIZE - MAP_INSET * 2, SIZE - MAP_INSET * 2, 8, 8);
 
         gc.setStroke(groundColor.brighter().deriveColor(0, 0.75, 1.0, 0.34));
@@ -211,17 +220,24 @@ public class MiniMapView extends StackPane {
                 continue;
             }
 
-            Color objectColor = parseColor(object.getColor());
-            gc.setFill(objectColor.deriveColor(0, 1, 1, 0.82));
-            gc.setStroke(objectColor.brighter().deriveColor(0, 1, 1, 0.64));
-
             if ("cylinder".equals(object.getType())) {
                 double radius = Math.max(2.2, object.getSizeX() * scale);
+                double diameter = radius * 2.0;
+                Paint objectPaint = getObjectPaint(object, x - radius, y - radius, diameter, diameter);
+                Color strokeColor = getObjectStrokeColor(object);
+
+                gc.setFill(objectPaint);
+                gc.setStroke(strokeColor);
                 gc.fillOval(x - radius, y - radius, radius * 2, radius * 2);
                 gc.strokeOval(x - radius, y - radius, radius * 2, radius * 2);
             } else {
                 double width = Math.max(3.0, object.getSizeX() * scale);
                 double depth = Math.max(3.0, object.getSizeZ() * scale);
+                Paint objectPaint = getObjectPaint(object, x - width / 2.0, y - depth / 2.0, width, depth);
+                Color strokeColor = getObjectStrokeColor(object);
+
+                gc.setFill(objectPaint);
+                gc.setStroke(strokeColor);
                 gc.fillRect(x - width / 2.0, y - depth / 2.0, width, depth);
                 gc.strokeRect(x - width / 2.0, y - depth / 2.0, width, depth);
             }
@@ -297,11 +313,51 @@ public class MiniMapView extends StackPane {
         return "plane".equals(object.getType());
     }
 
-    private Color getGroundColor(WorldConfiguration worldConfig) {
+    private WorldObject getGroundPlane(WorldConfiguration worldConfig) {
         for (WorldObject object : worldConfig.getObjects()) {
             if (isGroundPlane(object)) {
-                return parseColor(object.getColor());
+                return object;
             }
+        }
+
+        return null;
+    }
+
+    private Paint getGroundPaint(WorldObject groundPlane, Color fallbackColor, double scale) {
+        if (groundPlane == null) {
+            return fallbackColor.deriveColor(0, 0.85, 0.72, 0.78);
+        }
+
+        Optional<Image> texture = materialFactory.getTextureImage(groundPlane);
+        if (texture.isEmpty()) {
+            return fallbackColor.deriveColor(0, 0.85, 0.72, 0.78);
+        }
+
+        double patternSize = Math.max(8.0, GROUND_TEXTURE_TILE_SIZE * scale);
+        return new ImagePattern(texture.get(), MAP_INSET, MAP_INSET, patternSize, patternSize, false);
+    }
+
+    private Paint getObjectPaint(WorldObject object, double x, double y, double width, double height) {
+        Optional<Image> texture = materialFactory.getTextureImage(object);
+        if (texture.isPresent()) {
+            return new ImagePattern(texture.get(), x, y, width, height, false);
+        }
+
+        return parseColor(object.getColor());
+    }
+
+    private Color getObjectStrokeColor(WorldObject object) {
+        Optional<Image> texture = materialFactory.getTextureImage(object);
+        if (texture.isPresent()) {
+            return Color.rgb(245, 245, 245, 0.7);
+        }
+
+        return parseColor(object.getColor()).brighter().deriveColor(0, 1, 1, 0.64);
+    }
+
+    private Color getGroundColor(WorldConfiguration worldConfig, WorldObject groundPlane) {
+        if (groundPlane != null) {
+            return parseColor(groundPlane.getColor());
         }
 
         return parseColor(worldConfig.getEnvironment().getGroundColor());
@@ -311,7 +367,7 @@ public class MiniMapView extends StackPane {
         try {
             return Color.web(value);
         } catch (IllegalArgumentException exception) {
-            return Color.rgb(255, 176, 76);
+            return FALLBACK_MATERIAL_COLOR;
         }
     }
 

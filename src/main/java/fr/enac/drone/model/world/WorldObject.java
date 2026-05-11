@@ -15,6 +15,7 @@ public class WorldObject {
     private double sizeY;
     private double sizeZ;
     private String color; // RGB hex or color name
+    private String texture; // Optional texture file under src/main/resources/textures
 
     public WorldObject() {}
 
@@ -126,12 +127,45 @@ public class WorldObject {
         this.color = color;
     }
 
+    public String getTexture() {
+        return texture;
+    }
+
+    public void setTexture(String texture) {
+        this.texture = normalizeTexture(texture);
+    }
+
     private void validateColor(String color) {
         try {
             Color.web(color);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid color format: " + color, e);
         }
+    }
+
+    private String normalizeTexture(String texture) {
+        if (texture == null || texture.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalizedTexture = texture.trim();
+        if (normalizedTexture.startsWith("/textures/")) {
+            normalizedTexture = normalizedTexture.substring("/textures/".length());
+        } else if (normalizedTexture.startsWith("textures/")) {
+            normalizedTexture = normalizedTexture.substring("textures/".length());
+        } else if (normalizedTexture.startsWith("/")) {
+            throw new IllegalArgumentException("Texture must be loaded from /textures resources: " + texture);
+        }
+
+        if (normalizedTexture.contains("\\")
+            || normalizedTexture.contains("..")
+            || normalizedTexture.contains("//")
+            || normalizedTexture.startsWith("/")
+            || normalizedTexture.endsWith("/")) {
+            throw new IllegalArgumentException("Invalid texture resource path: " + texture);
+        }
+
+        return normalizedTexture;
     }
 
     public String getTypeCaseSensitive() {

@@ -15,7 +15,8 @@
     "sizeX" : 5000.0,
     "sizeY" : 1.0,
     "sizeZ" : 5000.0,
-    "color" : "#228B22"
+    "color" : "#228B22",
+    "texture" : "ground_grass.png"
   }, {
     "name" : "Reference Tower",
     "type" : "cylinder",
@@ -25,7 +26,8 @@
     "sizeX" : 30.0,
     "sizeY" : 200.0,
     "sizeZ" : 30.0,
-    "color" : "#FFA500"
+    "color" : "#FFA500",
+    "texture" : "obstacle_metal.png"
   }, {
     "name" : "Example Cube",
     "type" : "box",
@@ -35,7 +37,8 @@
     "sizeX" : 50.0,
     "sizeY" : 50.0,
     "sizeZ" : 50.0,
-    "color" : "#FF0000"
+    "color" : "#FF0000",
+    "texture" : "obstacle_concrete.png"
   }, {
     "name" : "Example Rectangle",
     "type" : "box",
@@ -45,7 +48,8 @@
     "sizeX" : 80.0,
     "sizeY" : 40.0,
     "sizeZ" : 120.0,
-    "color" : "#0000FF"
+    "color" : "#0000FF",
+    "texture" : "obstacle_metal.png"
   }, {
     "name" : "Small Cylinder",
     "type" : "cylinder",
@@ -55,7 +59,8 @@
     "sizeX" : 20.0,
     "sizeY" : 50.0,
     "sizeZ" : 20.0,
-    "color" : "#00FF00"
+    "color" : "#00FF00",
+    "texture" : "obstacle_metal.png"
   }, {
     "name" : "Tall Box",
     "type" : "box",
@@ -65,7 +70,8 @@
     "sizeX" : 30.0,
     "sizeY" : 120.0,
     "sizeZ" : 30.0,
-    "color" : "#FFFF00"
+    "color" : "#FFFF00",
+    "texture" : "obstacle_concrete.png"
   } ],
   "environment" : {
     "skyColor" : "#87CEEB",

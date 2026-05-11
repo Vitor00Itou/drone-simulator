@@ -125,14 +125,16 @@ public class WorldConfiguration {
         List<WorldObject> defaultObjects = new ArrayList<>();
         
         // Ground plane (always present)
-        defaultObjects.add(new WorldObject(
+        WorldObject ground = new WorldObject(
             "Ground", "plane", 0, 0, 0, 5000, 1, 5000, "#228B22"
-        ));
+        );
+        defaultObjects.add(ground);
         
         // Reference tower
-        defaultObjects.add(new WorldObject(
+        WorldObject referenceTower = new WorldObject(
             "Reference Tower", "cylinder", 150, -70, 500, 30, 200, 30, "#FFA500"
-        ));
+        );
+        defaultObjects.add(referenceTower);
         
         
         return defaultObjects;

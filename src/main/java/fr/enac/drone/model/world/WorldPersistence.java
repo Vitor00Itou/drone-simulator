@@ -1,5 +1,6 @@
 package fr.enac.drone.model.world;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
@@ -12,7 +13,8 @@ import java.util.Objects;
  * Handles saving and loading world state to/from JSON files.
  */
 public class WorldPersistence {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+        .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     private static final Path SAVES_DIRECTORY = Paths.get("saves");
 
     static {
