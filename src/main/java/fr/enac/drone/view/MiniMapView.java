@@ -111,7 +111,7 @@ public class MiniMapView extends StackPane {
             return;
         }
 
-        gc.setStroke(Color.rgb(255, 255, 100, 0.55)); // soft yellow, not too opaque
+        gc.setStroke(Color.rgb(255, 255, 100, 0.55)); // soft yellow .
         gc.setLineWidth(1.5);
         gc.beginPath();
 
@@ -129,7 +129,6 @@ public class MiniMapView extends StackPane {
         gc.stroke();
     }
 
-    // ----- The methods below remain unchanged from the original -----
     private void drawMapSurface(GraphicsContext gc, WorldConfiguration worldConfig) {
         Color groundColor = getGroundColor(worldConfig);
         gc.setFill(groundColor.deriveColor(0, 0.85, 0.72, 0.78));
