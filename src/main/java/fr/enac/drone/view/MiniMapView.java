@@ -18,6 +18,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * Top-down map of the simulation world, showing the drone, obstacles,
+ * flight trail and an optional navigation target.
+ */
 public class MiniMapView extends StackPane {
     private static final double SIZE = 180.0;
     private static final double MAP_INSET = 12.0;
@@ -33,15 +37,12 @@ public class MiniMapView extends StackPane {
     private double lastTrailX, lastTrailZ;
     private boolean trailInitialized = false;
 
-    // Pour conversion inverse (clic -> monde)
     private double currentWorldSize = DEFAULT_WORLD_SIZE;
     private double currentScale = 1.0;
     private double currentCenter = SIZE / 2.0;
 
-    // Cible actuelle (null si pas de cible)
     private double[] targetWorld = null;
-
-    private Consumer<double[]> onTargetClicked; // callback avec {x, z}
+    private Consumer<double[]> onTargetClicked;
 
     public MiniMapView() {
         setMinSize(SIZE, SIZE);
@@ -53,11 +54,8 @@ public class MiniMapView extends StackPane {
                 Insets.EMPTY
         )));
         setEffect(new DropShadow(12, Color.rgb(0, 0, 0, 0.28)));
-        // Pas de setMouseTransparent, on veut capturer les clics
 
         getChildren().add(canvas);
-
-        // Gestion du clic
         setOnMouseClicked(this::handleMapClick);
     }
 
@@ -73,11 +71,14 @@ public class MiniMapView extends StackPane {
         this.targetWorld = null;
     }
 
+    public List<double[]> getTrail() {
+        return new ArrayList<>(trailPoints);
+    }
+
     private void handleMapClick(MouseEvent event) {
         if (onTargetClicked == null) return;
         double mouseX = event.getX();
         double mouseY = event.getY();
-        // Conversion écran -> monde (XZ)
         double worldX = (mouseX - currentCenter) / currentScale;
         double worldZ = (currentCenter - mouseY) / currentScale;
         double[] target = new double[]{worldX, worldZ};
@@ -85,6 +86,9 @@ public class MiniMapView extends StackPane {
         onTargetClicked.accept(target);
     }
 
+    /**
+     * Repaints the minimap from the current model state.
+     */
     public void render(DroneModel model, WorldConfiguration worldConfig) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         double mapSize = SIZE - (MAP_INSET * 2);
@@ -102,11 +106,10 @@ public class MiniMapView extends StackPane {
         drawTrail(gc, center, currentScale);
         drawHomeMarker(gc, center);
         drawWorldObjects(gc, worldConfig, center, currentScale);
-        drawTarget(gc, center, currentScale);          // croix jaune
+        drawTarget(gc, center, currentScale);
         drawDroneMarker(gc, model, center, currentScale);
     }
 
-    // ---------- Trace historique ----------
     private void updateTrail(DroneModel model) {
         double cx = model.getX();
         double cz = model.getZ();
@@ -147,41 +150,38 @@ public class MiniMapView extends StackPane {
         gc.stroke();
     }
 
-    // ---------- Croix cible (jaune) ----------
     private void drawTarget(GraphicsContext gc, double center, double scale) {
         if (targetWorld == null) return;
 
         double sx = toScreenX(targetWorld[0], center, scale);
         double sy = toScreenY(targetWorld[1], center, scale);
 
-        // Vérifier si dans la zone visible
         if (!isInsideMap(sx, sy)) return;
 
         double size = 6.0;
         gc.setStroke(Color.YELLOW);
         gc.setLineWidth(2.0);
-        // Ligne horizontale
         gc.strokeLine(sx - size, sy, sx + size, sy);
-        // Ligne verticale
         gc.strokeLine(sx, sy - size, sx, sy + size);
     }
 
-    // ---------- Dessins du fond, grille, obstacles, etc. (inchangés) ----------
     private void drawMapSurface(GraphicsContext gc, WorldConfiguration worldConfig) {
-        Color ground = getGroundColor(worldConfig);
-        gc.setFill(ground.deriveColor(0, 0.85, 0.72, 0.78));
+        Color groundColor = getGroundColor(worldConfig);
+        gc.setFill(groundColor.deriveColor(0, 0.85, 0.72, 0.78));
         gc.fillRoundRect(MAP_INSET, MAP_INSET, SIZE - MAP_INSET * 2, SIZE - MAP_INSET * 2, 8, 8);
 
-        gc.setStroke(ground.brighter().deriveColor(0, 0.75, 1.0, 0.34));
+        gc.setStroke(groundColor.brighter().deriveColor(0, 0.75, 1.0, 0.34));
         gc.setLineWidth(1.2);
         gc.strokeRoundRect(MAP_INSET, MAP_INSET, SIZE - MAP_INSET * 2, SIZE - MAP_INSET * 2, 8, 8);
     }
 
     private void drawGrid(GraphicsContext gc, double mapSize) {
         gc.setLineWidth(1.0);
+
         for (int i = 1; i < GRID_LINE_COUNT; i++) {
             double position = MAP_INSET + (mapSize / GRID_LINE_COUNT) * i;
             double opacity = i == GRID_LINE_COUNT / 2 ? 0.22 : 0.11;
+
             gc.setStroke(Color.rgb(232, 230, 241, opacity));
             gc.strokeLine(position, MAP_INSET, position, SIZE - MAP_INSET);
             gc.strokeLine(MAP_INSET, position, SIZE - MAP_INSET, position);
@@ -198,26 +198,32 @@ public class MiniMapView extends StackPane {
 
     private void drawWorldObjects(GraphicsContext gc, WorldConfiguration worldConfig, double center, double scale) {
         gc.setLineWidth(0.8);
-        for (WorldObject obj : worldConfig.getObjects()) {
-            if (isGroundPlane(obj)) continue;
 
-            double x = toScreenX(obj.getPosX(), center, scale);
-            double y = toScreenY(obj.getPosZ(), center, scale);
-            if (!isInsideMap(x, y)) continue;
+        for (WorldObject object : worldConfig.getObjects()) {
+            if (isGroundPlane(object)) {
+                continue;
+            }
 
-            Color objColor = parseColor(obj.getColor());
-            gc.setFill(objColor.deriveColor(0, 1, 1, 0.82));
-            gc.setStroke(objColor.brighter().deriveColor(0, 1, 1, 0.64));
+            double x = toScreenX(object.getPosX(), center, scale);
+            double y = toScreenY(object.getPosZ(), center, scale);
 
-            if ("cylinder".equals(obj.getType())) {
-                double radius = Math.max(2.2, obj.getSizeX() * scale);
+            if (!isInsideMap(x, y)) {
+                continue;
+            }
+
+            Color objectColor = parseColor(object.getColor());
+            gc.setFill(objectColor.deriveColor(0, 1, 1, 0.82));
+            gc.setStroke(objectColor.brighter().deriveColor(0, 1, 1, 0.64));
+
+            if ("cylinder".equals(object.getType())) {
+                double radius = Math.max(2.2, object.getSizeX() * scale);
                 gc.fillOval(x - radius, y - radius, radius * 2, radius * 2);
                 gc.strokeOval(x - radius, y - radius, radius * 2, radius * 2);
             } else {
-                double w = Math.max(3.0, obj.getSizeX() * scale);
-                double d = Math.max(3.0, obj.getSizeZ() * scale);
-                gc.fillRect(x - w / 2, y - d / 2, w, d);
-                gc.strokeRect(x - w / 2, y - d / 2, w, d);
+                double width = Math.max(3.0, object.getSizeX() * scale);
+                double depth = Math.max(3.0, object.getSizeZ() * scale);
+                gc.fillRect(x - width / 2.0, y - depth / 2.0, width, depth);
+                gc.strokeRect(x - width / 2.0, y - depth / 2.0, width, depth);
             }
         }
     }
@@ -227,60 +233,93 @@ public class MiniMapView extends StackPane {
         double rawY = toScreenY(model.getZ(), center, scale);
         double x = clamp(rawX, MAP_INSET, SIZE - MAP_INSET);
         double y = clamp(rawY, MAP_INSET, SIZE - MAP_INSET);
-        boolean outside = rawX != x || rawY != y;
+        boolean outsideWorld = rawX != x || rawY != y;
 
-        double yawRad = Math.toRadians(model.getYaw());
-        double fwdX = Math.sin(yawRad);
-        double fwdY = -Math.cos(yawRad);
-        double rightX = Math.cos(yawRad);
-        double rightY = Math.sin(yawRad);
+        double yawRadians = Math.toRadians(model.getYaw());
+        double forwardX = Math.sin(yawRadians);
+        double forwardY = -Math.cos(yawRadians);
+        double rightX = Math.cos(yawRadians);
+        double rightY = Math.sin(yawRadians);
 
-        double tipX = x + fwdX * DRONE_MARKER_SIZE;
-        double tipY = y + fwdY * DRONE_MARKER_SIZE;
-        double tailX = x - fwdX * DRONE_MARKER_SIZE * 0.75;
-        double tailY = y - fwdY * DRONE_MARKER_SIZE * 0.75;
+        double tipX = x + forwardX * DRONE_MARKER_SIZE;
+        double tipY = y + forwardY * DRONE_MARKER_SIZE;
+        double tailX = x - forwardX * DRONE_MARKER_SIZE * 0.75;
+        double tailY = y - forwardY * DRONE_MARKER_SIZE * 0.75;
         double leftX = tailX - rightX * DRONE_MARKER_SIZE * 0.65;
         double leftY = tailY - rightY * DRONE_MARKER_SIZE * 0.65;
         double rightTipX = tailX + rightX * DRONE_MARKER_SIZE * 0.65;
         double rightTipY = tailY + rightY * DRONE_MARKER_SIZE * 0.65;
 
-        gc.setFill(outside ? Color.rgb(255, 209, 102) : Color.rgb(255, 84, 84));
+        gc.setFill(outsideWorld ? Color.rgb(255, 209, 102) : Color.rgb(255, 84, 84));
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(1.3);
-        gc.fillPolygon(new double[]{tipX, leftX, rightTipX}, new double[]{tipY, leftY, rightTipY}, 3);
-        gc.strokePolygon(new double[]{tipX, leftX, rightTipX}, new double[]{tipY, leftY, rightTipY}, 3);
+        gc.fillPolygon(
+                new double[] { tipX, leftX, rightTipX },
+                new double[] { tipY, leftY, rightTipY },
+                3
+        );
+        gc.strokePolygon(
+                new double[] { tipX, leftX, rightTipX },
+                new double[] { tipY, leftY, rightTipY },
+                3
+        );
     }
 
-    private double toScreenX(double worldX, double center, double scale) { return center + worldX * scale; }
-    private double toScreenY(double worldZ, double center, double scale) { return center - worldZ * scale; }
+    private double toScreenX(double worldX, double center, double scale) {
+        return center + worldX * scale;
+    }
+
+    private double toScreenY(double worldZ, double center, double scale) {
+        return center - worldZ * scale;
+    }
 
     private double getWorldSize(WorldConfiguration worldConfig) {
-        double size = DEFAULT_WORLD_SIZE;
-        for (WorldObject obj : worldConfig.getObjects()) {
-            if (isGroundPlane(obj)) size = Math.max(size, Math.max(obj.getSizeX(), obj.getSizeZ()));
-            double hx = Math.abs(obj.getPosX()) + obj.getSizeX() / 2.0;
-            double hz = Math.abs(obj.getPosZ()) + obj.getSizeZ() / 2.0;
-            size = Math.max(size, 2.0 * Math.max(hx, hz));
+        double worldSize = DEFAULT_WORLD_SIZE;
+
+        for (WorldObject object : worldConfig.getObjects()) {
+            if (isGroundPlane(object)) {
+                worldSize = Math.max(worldSize, Math.max(object.getSizeX(), object.getSizeZ()));
+            }
+
+            double halfWidth = object.getSizeX() / 2.0;
+            double halfDepth = object.getSizeZ() / 2.0;
+            double requiredSize = 2.0 * Math.max(
+                    Math.abs(object.getPosX()) + halfWidth,
+                    Math.abs(object.getPosZ()) + halfDepth
+            );
+            worldSize = Math.max(worldSize, requiredSize);
         }
-        return size;
+
+        return worldSize;
     }
 
-    private boolean isGroundPlane(WorldObject obj) { return "plane".equals(obj.getType()); }
+    private boolean isGroundPlane(WorldObject object) {
+        return "plane".equals(object.getType());
+    }
 
     private Color getGroundColor(WorldConfiguration worldConfig) {
-        for (WorldObject obj : worldConfig.getObjects())
-            if (isGroundPlane(obj)) return parseColor(obj.getColor());
+        for (WorldObject object : worldConfig.getObjects()) {
+            if (isGroundPlane(object)) {
+                return parseColor(object.getColor());
+            }
+        }
+
         return parseColor(worldConfig.getEnvironment().getGroundColor());
     }
 
     private Color parseColor(String value) {
-        try { return Color.web(value); }
-        catch (IllegalArgumentException e) { return Color.rgb(255, 176, 76); }
+        try {
+            return Color.web(value);
+        } catch (IllegalArgumentException exception) {
+            return Color.rgb(255, 176, 76);
+        }
     }
 
     private boolean isInsideMap(double x, double y) {
         return x >= MAP_INSET && x <= SIZE - MAP_INSET && y >= MAP_INSET && y <= SIZE - MAP_INSET;
     }
 
-    private double clamp(double v, double min, double max) { return Math.max(min, Math.min(max, v)); }
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
+    }
 }
