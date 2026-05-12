@@ -17,6 +17,8 @@ import javafx.scene.shape.Cylinder;
 import javafx.scene.AmbientLight;
 import javafx.scene.transform.Rotate;
 import java.util.Objects;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Handles the 3D rendering and FPV camera logic for the drone simulator.
@@ -145,5 +147,28 @@ public class SimulationView {
         camera.setRotate(model.getYaw());
 
         hudView.update(model, worldConfig);
+    }
+
+    /**
+     * Clears the current navigation target cross from the minimap.
+     */
+    public void clearMinimapTarget() {
+        hudView.clearMinimapTarget();
+    }
+
+    /**
+     * Returns a copy of the recorded flight trail points.
+     * Each element is a double[] {x, z} in world coordinates.
+     */
+    public List<double[]> getTrail() {
+        return hudView.getTrail();
+    }
+
+    /**
+     * Registers a callback to be invoked when the user clicks on the minimap.
+     * The callback receives the world {x, z} coordinates of the clicked point.
+     */
+    public void setMinimapTargetHandler(Consumer<double[]> handler) {
+        hudView.setOnMinimapTargetClicked(handler);
     }
 }

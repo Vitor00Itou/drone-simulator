@@ -10,19 +10,25 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
-/**
- * Two-dimensional FPV overlay displayed above the 3D scene.
- */
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
 public class FpvHudView extends BorderPane {
     private final TelemetryPanel telemetryPanel;
     private final MiniMapView miniMapView;
+    
+    // Historique de la trajectoire (coordonnées X, Z)
+    private final List<double[]> trail = new ArrayList<>();
 
     public FpvHudView() {
         telemetryPanel = new TelemetryPanel();
         CommandHelpPanel commandHelpPanel = new CommandHelpPanel();
         miniMapView = new MiniMapView();
 
-        setMouseTransparent(true);
+        telemetryPanel.setMouseTransparent(true);
+        commandHelpPanel.setMouseTransparent(true);
+
         setPickOnBounds(false);
 
         setTop(telemetryPanel);
@@ -43,5 +49,30 @@ public class FpvHudView extends BorderPane {
         DroneTelemetry telemetry = model.getTelemetry();
         telemetryPanel.update(telemetry);
         miniMapView.render(model, worldConfig);
+
+        // Enregistrement de la position courante pour la trajectoire
+        double x = model.getX();
+        double z = model.getZ();
+        trail.add(new double[]{x, z});
+        
+        // Limitation de la taille de l'historique
+        if (trail.size() > 1000) {
+            trail.remove(0);
+        }
+    }
+
+    public void setOnMinimapTargetClicked(Consumer<double[]> callback) {
+        miniMapView.setOnTargetClicked(callback);
+    }
+
+    public void clearMinimapTarget() {
+        miniMapView.clearTarget();
+    }
+
+    /**
+     * Retourne la liste des points de la trajectoire (chaque point = {x, z}).
+     */
+    public List<double[]> getTrail() {
+        return trail;
     }
 }

@@ -7,6 +7,7 @@ import javafx.geometry.Insets;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -15,9 +16,11 @@ import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * Top-down map of the simulation world, showing the drone, obstacles, and the flight trail.
+ * Top-down map of the simulation world, showing the drone, obstacles,
+ * flight trail and an optional navigation target.
  */
 public class MiniMapView extends StackPane {
     private static final double SIZE = 180.0;
@@ -26,16 +29,20 @@ public class MiniMapView extends StackPane {
     private static final double DRONE_MARKER_SIZE = 6.0;
     private static final double DEFAULT_WORLD_SIZE = 5000.0;
 
-    // Trail settings
-    private static final double TRAIL_MIN_DISTANCE = 1.0;   // world units between recorded points
-    private static final int MAX_TRAIL_POINTS = 2000;       // prevent memory issues
+    private static final double TRAIL_MIN_DISTANCE = 1.0;
+    private static final int MAX_TRAIL_POINTS = 2000;
 
     private final Canvas canvas = new Canvas(SIZE, SIZE);
-
-    // Flight path history: each element is [worldX, worldZ]
     private final List<double[]> trailPoints = new ArrayList<>();
     private double lastTrailX, lastTrailZ;
     private boolean trailInitialized = false;
+
+    private double currentWorldSize = DEFAULT_WORLD_SIZE;
+    private double currentScale = 1.0;
+    private double currentCenter = SIZE / 2.0;
+
+    private double[] targetWorld = null;
+    private Consumer<double[]> onTargetClicked;
 
     public MiniMapView() {
         setMinSize(SIZE, SIZE);
@@ -47,9 +54,36 @@ public class MiniMapView extends StackPane {
                 Insets.EMPTY
         )));
         setEffect(new DropShadow(12, Color.rgb(0, 0, 0, 0.28)));
-        setMouseTransparent(true);
 
         getChildren().add(canvas);
+        setOnMouseClicked(this::handleMapClick);
+    }
+
+    public void setOnTargetClicked(Consumer<double[]> callback) {
+        this.onTargetClicked = callback;
+    }
+
+    public void setTarget(double worldX, double worldZ) {
+        this.targetWorld = new double[]{worldX, worldZ};
+    }
+
+    public void clearTarget() {
+        this.targetWorld = null;
+    }
+
+    public List<double[]> getTrail() {
+        return new ArrayList<>(trailPoints);
+    }
+
+    private void handleMapClick(MouseEvent event) {
+        if (onTargetClicked == null) return;
+        double mouseX = event.getX();
+        double mouseY = event.getY();
+        double worldX = (mouseX - currentCenter) / currentScale;
+        double worldZ = (currentCenter - mouseY) / currentScale;
+        double[] target = new double[]{worldX, worldZ};
+        setTarget(worldX, worldZ);
+        onTargetClicked.accept(target);
     }
 
     /**
@@ -59,74 +93,76 @@ public class MiniMapView extends StackPane {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         double mapSize = SIZE - (MAP_INSET * 2);
         double center = SIZE / 2.0;
-        double scale = mapSize / getWorldSize(worldConfig);
+
+        currentWorldSize = getWorldSize(worldConfig);
+        currentScale = mapSize / currentWorldSize;
+        currentCenter = center;
 
         gc.clearRect(0, 0, SIZE, SIZE);
 
-        // 1. Update and record the drone's position for the trail
         updateTrail(model);
-
-        // 2. Draw background
         drawMapSurface(gc, worldConfig);
         drawGrid(gc, mapSize);
-
-        // 3. Draw the flight trail (semi-transparent, so it doesn't hide objects)
-        drawTrail(gc, center, scale);
-
-        // 4. Draw static world elements
+        drawTrail(gc, center, currentScale);
         drawHomeMarker(gc, center);
-        drawWorldObjects(gc, worldConfig, center, scale);
-
-        // 5. Draw the drone marker on top of everything
-        drawDroneMarker(gc, model, center, scale);
+        drawWorldObjects(gc, worldConfig, center, currentScale);
+        drawTarget(gc, center, currentScale);
+        drawDroneMarker(gc, model, center, currentScale);
     }
 
     private void updateTrail(DroneModel model) {
-        double currentX = model.getX();
-        double currentZ = model.getZ();
+        double cx = model.getX();
+        double cz = model.getZ();
 
         if (!trailInitialized) {
-            trailPoints.add(new double[]{currentX, currentZ});
-            lastTrailX = currentX;
-            lastTrailZ = currentZ;
+            trailPoints.add(new double[]{cx, cz});
+            lastTrailX = cx;
+            lastTrailZ = cz;
             trailInitialized = true;
             return;
         }
 
-        double dx = currentX - lastTrailX;
-        double dz = currentZ - lastTrailZ;
+        double dx = cx - lastTrailX;
+        double dz = cz - lastTrailZ;
         if (dx * dx + dz * dz >= TRAIL_MIN_DISTANCE * TRAIL_MIN_DISTANCE) {
-            // Limit trail length
             if (trailPoints.size() >= MAX_TRAIL_POINTS) {
                 trailPoints.remove(0);
             }
-            trailPoints.add(new double[]{currentX, currentZ});
-            lastTrailX = currentX;
-            lastTrailZ = currentZ;
+            trailPoints.add(new double[]{cx, cz});
+            lastTrailX = cx;
+            lastTrailZ = cz;
         }
     }
 
     private void drawTrail(GraphicsContext gc, double center, double scale) {
-        if (trailPoints.size() < 2) {
-            return;
-        }
+        if (trailPoints.size() < 2) return;
 
-        gc.setStroke(Color.rgb(255, 255, 100, 0.55)); // soft yellow .
+        gc.setStroke(Color.rgb(255, 255, 100, 0.55));
         gc.setLineWidth(1.5);
         gc.beginPath();
-
         for (int i = 0; i < trailPoints.size(); i++) {
             double[] pt = trailPoints.get(i);
             double sx = toScreenX(pt[0], center, scale);
             double sy = toScreenY(pt[1], center, scale);
-
-            if (i == 0) {
-                gc.moveTo(sx, sy);
-            } else {
-                gc.lineTo(sx, sy);
-            }
+            if (i == 0) gc.moveTo(sx, sy);
+            else gc.lineTo(sx, sy);
         }
         gc.stroke();
+    }
+
+    private void drawTarget(GraphicsContext gc, double center, double scale) {
+        if (targetWorld == null) return;
+
+        double sx = toScreenX(targetWorld[0], center, scale);
+        double sy = toScreenY(targetWorld[1], center, scale);
+
+        if (!isInsideMap(sx, sy)) return;
+
+        double size = 6.0;
+        gc.setStroke(Color.YELLOW);
+        gc.setLineWidth(2.0);
+        gc.strokeLine(sx - size, sy, sx + size, sy);
+        gc.strokeLine(sx, sy - size, sx, sy + size);
     }
 
     private void drawMapSurface(GraphicsContext gc, WorldConfiguration worldConfig) {
