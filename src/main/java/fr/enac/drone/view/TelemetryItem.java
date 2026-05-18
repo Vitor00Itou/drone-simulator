@@ -7,9 +7,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
-/**
- * Displays one telemetry label and its current formatted value.
- */
 public class TelemetryItem extends VBox {
     private final Label valueLabel;
 

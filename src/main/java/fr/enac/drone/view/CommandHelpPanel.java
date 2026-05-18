@@ -17,6 +17,7 @@ import javafx.scene.text.FontWeight;
  * Displays the commands currently available in the simulator.
  */
 public class CommandHelpPanel extends VBox {
+
     public CommandHelpPanel() {
         setAlignment(Pos.CENTER_LEFT);
         setSpacing(8);
@@ -30,10 +31,12 @@ public class CommandHelpPanel extends VBox {
         setEffect(new DropShadow(12, Color.rgb(0, 0, 0, 0.28)));
 
         getChildren().addAll(
-                createCommandRow("W / S", "Altitude"),
-                createCommandRow("A / D", "Heading"),
-                createCommandRow("Up / Down", "Forward / Backward"),
-                createCommandRow("Left / Right", "Lateral Movement")
+                createCommandRow("O",           "Arm (motors ON)"),
+                createCommandRow("F",           "Disarm / Force Land"),
+                createCommandRow("W / S",       "Altitude"),
+                createCommandRow("A / D",       "Heading"),
+                createCommandRow("Up / Down",   "Forward / Backward"),
+                createCommandRow("Left / Right","Lateral Movement")
         );
     }
 
@@ -42,7 +45,7 @@ public class CommandHelpPanel extends VBox {
         keyLabel.setTextFill(Color.rgb(232, 230, 241));
         keyLabel.setFont(Font.font("System", FontWeight.BOLD, 13));
         keyLabel.setAlignment(Pos.CENTER);
-        keyLabel.setMinWidth(72);
+        keyLabel.setMinWidth(90);
         keyLabel.setPadding(new Insets(5, 10, 5, 10));
         keyLabel.setBackground(new Background(new BackgroundFill(
                 Color.rgb(29, 26, 48, 0.95),

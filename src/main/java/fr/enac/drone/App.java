@@ -18,16 +18,21 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 public class App extends Application {
+
     private static final String DEFAULT_WORLD_FILENAME = "world_default";
 
     private String currentWorldFilename = DEFAULT_WORLD_FILENAME;
+
     private Scene scene;
     private BorderPane root;
     private MenuBar menuBar;
+
     private WorldConfiguration worldConfig;
     private AnimationTimer gameLoop;
 
@@ -37,15 +42,19 @@ public class App extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        createMenuBar();
-        this.root = new BorderPane();
-        root.setTop(menuBar);
 
         loadOrCreateDefaultWorld();
 
-        this.scene = new Scene(root, 800, 600);
+        createMenuBar();
+
+        root = new BorderPane();
+        root.setTop(menuBar);
+
+        scene = new Scene(root, 800, 600);
+
         primaryStage.setTitle("FPV Drone Simulator");
         primaryStage.setScene(scene);
+        primaryStage.setMaximized(true);
         primaryStage.show();
 
         initializeSimulation();
@@ -58,6 +67,7 @@ public class App extends Application {
         } catch (Exception e) {
             System.err.println("Error loading default world: " + e.getMessage());
         }
+
         try {
             worldConfig = new WorldConfiguration("Default World");
             WorldPersistence.saveWorldConfiguration(worldConfig, DEFAULT_WORLD_FILENAME);
@@ -68,24 +78,39 @@ public class App extends Application {
     }
 
     private void initializeSimulation() {
+
         stopGameLoop();
         createMvcComponents();
         setupEventHandlers();
 
-        // ----- GOTO : clic sur la minimap -----
         PathPlanner pathPlanner = new PathPlanner(worldConfig);
+
         controller.setOnAutopilotFinished(() -> view.clearMinimapTarget());
+
         view.setMinimapTargetHandler(worldPos -> {
             double startX = model.getX();
             double startZ = model.getZ();
-            List<double[]> waypoints = pathPlanner.findPath(startX, startZ, worldPos[0], worldPos[1]);
+
+            List<double[]> waypoints =
+                    pathPlanner.findPath(startX, startZ, worldPos[0], worldPos[1]);
+
             if (!waypoints.isEmpty()) {
-                Autopilot autopilot = new Autopilot(waypoints);
-                controller.setAutopilot(autopilot);
+                controller.setAutopilot(new Autopilot(waypoints));
             } else {
-                view.clearMinimapTarget(); // pas de chemin → on enlève la croix
+                view.clearMinimapTarget();
                 System.out.println("Aucun chemin trouvé vers la cible.");
             }
+        });
+
+        controller.setReturnHomeAction(() -> {
+            List<double[]> trail = view.getTrail();
+            if (trail.size() < 2) return;
+
+            List<double[]> reversed = new ArrayList<>(trail);
+            Collections.reverse(reversed);
+
+            controller.setAutopilot(new Autopilot(reversed));
+            view.clearMinimapTarget();
         });
 
         startGameLoop();
@@ -96,58 +121,89 @@ public class App extends Application {
     }
 
     private void createMvcComponents() {
+
         model = new DroneModel();
         controller = new DroneController(model);
         view = new SimulationView(model, worldConfig);
 
         DroneSpawn spawn = worldConfig.getDroneSpawn();
-        model.setSpawnPosition(spawn.getPosX(), spawn.getPosY(), spawn.getPosZ(), spawn.getYaw());
+
+        model.setSpawnPosition(
+                spawn.getPosX(),
+                spawn.getPosY(),
+                spawn.getPosZ(),
+                spawn.getYaw()
+        );
 
         root.setCenter(view.getRoot());
     }
 
     private void setupEventHandlers() {
-        view.getRoot().requestFocus();
-        scene.setOnKeyPressed(event -> controller.addKey(event.getCode()));
-        scene.setOnKeyReleased(event -> controller.removeKey(event.getCode()));
+
+        Objects.requireNonNull(view).getRoot().requestFocus();
+
+        scene.setOnKeyPressed(e -> controller.addKey(e.getCode()));
+        scene.setOnKeyReleased(e -> controller.removeKey(e.getCode()));
     }
 
     private void startGameLoop() {
+
         gameLoop = new AnimationTimer() {
+
             private long lastUpdate = 0;
+
             @Override
             public void handle(long now) {
+
                 if (lastUpdate == 0) {
                     lastUpdate = now;
                     return;
                 }
+
                 double deltaTime = (now - lastUpdate) / 1_000_000_000.0;
                 lastUpdate = now;
+
                 controller.update(deltaTime);
                 view.render();
             }
         };
+
         gameLoop.start();
     }
 
     private void createMenuBar() {
+
         menuBar = new MenuBar();
+
         Menu configMenu = new Menu("Configuration");
+
         MenuItem worldConfigItem = new MenuItem("World Configuration");
+
         worldConfigItem.setOnAction(e -> handleWorldConfigurationMenu());
+
         configMenu.getItems().add(worldConfigItem);
+
         menuBar.getMenus().add(configMenu);
     }
 
     private void handleWorldConfigurationMenu() {
-        WorldConfigMenu dialog = new WorldConfigMenu(worldConfig, currentWorldFilename, this::handleWorldLoaded);
+
+        WorldConfigMenu dialog =
+                new WorldConfigMenu(
+                        worldConfig,
+                        currentWorldFilename,
+                        this::handleWorldLoaded
+                );
+
         dialog.showAndWait();
     }
 
     private void handleWorldLoaded(WorldConfiguration config, String filename) {
+
         this.worldConfig = Objects.requireNonNull(config);
         this.currentWorldFilename = Objects.requireNonNull(filename);
-        this.initializeSimulation();
+
+        initializeSimulation();
     }
 
     public static void main(String[] args) {
