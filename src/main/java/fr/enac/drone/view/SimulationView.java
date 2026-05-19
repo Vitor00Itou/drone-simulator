@@ -17,6 +17,7 @@ import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Box;
 import javafx.scene.shape.Cylinder;
 import javafx.scene.transform.Rotate;
+import javafx.scene.PointLight;
 
 import java.util.Objects;
 import java.util.List;
@@ -85,10 +86,23 @@ public class SimulationView {
             }
         }
 
-        // Lighting
-        sceneRoot.getChildren().add(
-                new AmbientLight(Color.WHITE)
-        );
+        // Soft ambient light to avoid completely dark areas
+        AmbientLight ambientLight = new AmbientLight(Color.rgb(110, 110, 110));
+        sceneRoot.getChildren().add(ambientLight);
+
+        // Main light source simulating sunlight
+        PointLight mainLight = new PointLight(Color.WHITE);
+        mainLight.setTranslateX(-1200);
+        mainLight.setTranslateY(-1800);
+        mainLight.setTranslateZ(-1000);
+        sceneRoot.getChildren().add(mainLight);
+
+        // Secondary softer light to illuminate the opposite side
+        PointLight fillLight = new PointLight(Color.rgb(170, 170, 170));
+        fillLight.setTranslateX(1200);
+        fillLight.setTranslateY(-700);
+        fillLight.setTranslateZ(1000);
+        sceneRoot.getChildren().add(fillLight);
 
         // ── SubScene ───────────────────────────────────────────────────
         SubScene subScene = new SubScene(
@@ -150,11 +164,12 @@ public class SimulationView {
      */
     private Node createVisualObject(WorldObject obj) {
 
-        PhongMaterial material = new PhongMaterial();
+        Color baseColor = Color.web(obj.getColor());
 
-        material.setDiffuseColor(
-                Color.web(obj.getColor())
-        );
+        PhongMaterial material = new PhongMaterial();
+        material.setDiffuseColor(baseColor);
+        material.setSpecularColor(baseColor.brighter());
+        material.setSpecularPower(24);
 
         Node node = null;
 
