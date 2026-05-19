@@ -9,6 +9,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +27,17 @@ public class FpvHudView extends BorderPane {
     // Flight trail history (X, Z coordinates)
     private final List<double[]> trail = new ArrayList<>();
 
-    public FpvHudView() {
+    public FpvHudView(DroneModel model) {
         telemetryPanel = new TelemetryPanel();
         CommandHelpPanel commandHelpPanel = new CommandHelpPanel();
+        ControlSettingsPanel controlSettingsPanel = new ControlSettingsPanel(
+                model.getYawSensitivity(),
+                model::setYawSensitivity,
+                model.getMaxHorizontalSpeed(),
+                model::setMaxHorizontalSpeed,
+                model.getMaxVerticalSpeed(),
+                model::setMaxVerticalSpeed
+        );
         miniMapView = new MiniMapView();
 
         // Make panels transparent to mouse clicks so clicks pass through to the minimap
@@ -46,7 +55,11 @@ public class FpvHudView extends BorderPane {
         Region bottomSpacer = new Region();
         HBox.setHgrow(bottomSpacer, Priority.ALWAYS);
 
-        HBox bottomOverlay = new HBox(18, commandHelpPanel, bottomSpacer, miniMapView);
+        VBox commandColumn = new VBox(6, controlSettingsPanel, commandHelpPanel);
+        commandColumn.setAlignment(Pos.BOTTOM_LEFT);
+        commandColumn.setPickOnBounds(false);
+
+        HBox bottomOverlay = new HBox(18, commandColumn, bottomSpacer, miniMapView);
         bottomOverlay.setAlignment(Pos.BOTTOM_CENTER);
         bottomOverlay.setPadding(new Insets(0, 24, 24, 24));
 

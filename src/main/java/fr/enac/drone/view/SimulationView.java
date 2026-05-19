@@ -142,7 +142,7 @@ public class SimulationView {
         StackPane viewport =
                 new StackPane(sizingPane, subScene);
 
-        hudView = new FpvHudView();
+        hudView = new FpvHudView(model);
 
         viewport.getChildren().add(hudView);
 

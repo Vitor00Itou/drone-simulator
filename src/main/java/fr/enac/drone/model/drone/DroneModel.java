@@ -46,11 +46,15 @@ public class DroneModel {
     private static final double GRAVITY      = 9.81;
     private static final double HOVER_THRUST = 9.81;
 
-    private static final double MAX_HORIZONTAL_SPEED = 25.0;
-    private static final double MAX_VERTICAL_SPEED   = 8.0;
-
     private static final double YAW_RATE         = 40.0;
     private static final double YAW_ACCELERATION = 120.0;
+
+    private double yawSensitivity =
+            DroneControlSettings.YAW_SENSITIVITY.getDefaultValue();
+    private double maxHorizontalSpeed =
+            DroneControlSettings.MAX_HORIZONTAL_SPEED.getDefaultValue();
+    private double maxVerticalSpeed =
+            DroneControlSettings.MAX_VERTICAL_SPEED.getDefaultValue();
 
     // ── Battery ─────────────────────────────────────────────────────────
 
@@ -148,9 +152,9 @@ public class DroneModel {
                         - (rollInput * Math.sin(radYaw));
 
         double targetVelocityX =
-                moveX * MAX_HORIZONTAL_SPEED;
+                moveX * maxHorizontalSpeed;
         double targetVelocityZ =
-                moveZ * MAX_HORIZONTAL_SPEED;
+                moveZ * maxHorizontalSpeed;
 
         double accelX =
                 (targetVelocityX - velocityX)
@@ -169,7 +173,7 @@ public class DroneModel {
 
         // Vertical movement
         double targetVelocityY =
-                throttleInput * MAX_VERTICAL_SPEED;
+                throttleInput * maxVerticalSpeed;
 
         double accelY =
                 (targetVelocityY - velocityY)
@@ -233,7 +237,7 @@ public class DroneModel {
     public void yawLeft(double deltaTime) {
         if (!armed) return;
 
-        double targetYawVelocity = -YAW_RATE;
+        double targetYawVelocity = -YAW_RATE * yawSensitivity;
         yawVelocity +=
                 (targetYawVelocity - yawVelocity)
                         * YAW_ACCELERATION
@@ -244,7 +248,7 @@ public class DroneModel {
     public void yawRight(double deltaTime) {
         if (!armed) return;
 
-        double targetYawVelocity = YAW_RATE;
+        double targetYawVelocity = YAW_RATE * yawSensitivity;
         yawVelocity +=
                 (targetYawVelocity - yawVelocity)
                         * YAW_ACCELERATION
@@ -279,6 +283,24 @@ public class DroneModel {
     public double getY() { return y; }
     public double getZ() { return z; }
     public double getYaw() { return yaw; }
+    public double getYawSensitivity() { return yawSensitivity; }
+    public double getMaxHorizontalSpeed() { return maxHorizontalSpeed; }
+    public double getMaxVerticalSpeed() { return maxVerticalSpeed; }
+
+    public void setYawSensitivity(double yawSensitivity) {
+        this.yawSensitivity =
+                DroneControlSettings.YAW_SENSITIVITY.clamp(yawSensitivity);
+    }
+
+    public void setMaxHorizontalSpeed(double maxHorizontalSpeed) {
+        this.maxHorizontalSpeed =
+                DroneControlSettings.MAX_HORIZONTAL_SPEED.clamp(maxHorizontalSpeed);
+    }
+
+    public void setMaxVerticalSpeed(double maxVerticalSpeed) {
+        this.maxVerticalSpeed =
+                DroneControlSettings.MAX_VERTICAL_SPEED.clamp(maxVerticalSpeed);
+    }
 
     public double getBatteryPercentage() {
         return (remainingFlightTimeSeconds
