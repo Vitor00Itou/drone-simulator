@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 
 import fr.enac.drone.model.drone.DroneSpawn;
 
@@ -70,6 +71,54 @@ public class WorldConfiguration {
 
     public void setEnvironment(WorldEnvironment environment) {
         this.environment = Objects.requireNonNull(environment, "Environment cannot be null");
+    }
+
+    public void generateRandomObstacles(int obstacleCount) {
+        List<WorldObject> newObjects = new ArrayList<>();
+
+        // Keep the ground plane
+        for (WorldObject object : objects) {
+            if ("plane".equals(object.getType())) {
+                newObjects.add(object);
+            }
+        }
+
+        Random random = new Random();
+
+        double worldLimit = 2200;
+        double minHeight = 80;
+        double maxHeight = 250;
+        double minRadius = 15;
+        double maxRadius = 27.5;
+
+        for (int i = 0; i < obstacleCount; i++) {
+            double x;
+            double z;
+
+            do {
+                x = -worldLimit + random.nextDouble() * (2 * worldLimit);
+                z = -worldLimit + random.nextDouble() * (2 * worldLimit);
+            } while (Math.sqrt(x * x + z * z) < 250);
+
+            double height = minHeight + random.nextDouble() * (maxHeight - minHeight);
+            double radius = minRadius + random.nextDouble() * (maxRadius - minRadius);
+
+            double y = 0 - height / 2;
+
+            newObjects.add(new WorldObject(
+                    "Obstacle " + (i + 1),
+                    "cylinder",
+                    x,
+                    y,
+                    z,
+                    radius,
+                    height,
+                    radius,
+                    "#FFA500"
+            ));
+        }
+
+        setObjects(newObjects);
     }
 
     private List<WorldObject> createDefaultObjects() {
