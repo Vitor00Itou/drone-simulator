@@ -84,6 +84,27 @@ public class SimulationView {
             }
         }
 
+        // ── Generate Drone Spawn Base ──────────────────────────────────
+        fr.enac.drone.model.drone.DroneSpawn spawn = worldConfig.getDroneSpawn();
+        double spawnY = spawn.getPosY();
+        double droneBottomY = spawnY + 0.05; // Drone cylinder height is 0.10, so bottom is +0.05 in local Y
+        
+        double baseHeight;
+        double baseY;
+        double baseRadius;
+        
+        baseHeight = -droneBottomY;
+        baseY = droneBottomY + baseHeight / 2.0;
+        baseRadius = 20.0;
+        
+        Cylinder spawnBase = new Cylinder(baseRadius, baseHeight);
+        spawnBase.setTranslateX(spawn.getPosX());
+        spawnBase.setTranslateY(baseY);
+        spawnBase.setTranslateZ(spawn.getPosZ());
+        spawnBase.setMaterial(new PhongMaterial(Color.DARKGRAY));
+        
+        sceneRoot.getChildren().add(spawnBase);
+
         // Soft ambient light to avoid completely dark areas
         AmbientLight ambientLight = new AmbientLight(Color.rgb(110, 110, 110));
         sceneRoot.getChildren().add(ambientLight);
@@ -123,6 +144,8 @@ public class SimulationView {
         camera.setRotationAxis(Rotate.Y_AXIS);
 
         camera.setNearClip(0.1);
+
+        camera.setLayoutX(10);
 
         camera.setFarClip(5000.0);
 
