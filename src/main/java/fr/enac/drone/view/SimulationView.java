@@ -145,8 +145,6 @@ public class SimulationView {
 
         camera.setNearClip(0.1);
 
-        camera.setLayoutX(10);
-
         camera.setFarClip(5000.0);
 
         subScene.setCamera(camera);
