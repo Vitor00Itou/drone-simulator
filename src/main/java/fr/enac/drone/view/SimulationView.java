@@ -18,6 +18,7 @@ import javafx.scene.shape.Box;
 import javafx.scene.shape.Cylinder;
 import javafx.scene.transform.Rotate;
 import javafx.scene.PointLight;
+import fr.enac.drone.model.drone.DroneSpawn;
 
 import java.util.Objects;
 import java.util.List;
@@ -85,7 +86,8 @@ public class SimulationView {
         }
 
         // ── Generate Drone Spawn Base ──────────────────────────────────
-        fr.enac.drone.model.drone.DroneSpawn spawn = worldConfig.getDroneSpawn();
+        DroneSpawn spawn = worldConfig.getDroneSpawn();
+
         double spawnY = spawn.getPosY();
         double droneBottomY = spawnY + 0.05; // Drone cylinder height is 0.10, so bottom is +0.05 in local Y
         
