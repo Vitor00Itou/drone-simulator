@@ -1,109 +1,116 @@
-# Simulateur de pilotage de drone
+# Simulateur de pilotage de drone (FPV Drone Simulator)
 
-## Getting started
+## Description
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+This project is an FPV Drone Simulator built using Java and JavaFX. It features a physics-based flight model, an autopilot path planning system, a 3D simulation view, a minimap, and customizable world environments.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+The simulator allows you to fly a virtual drone in different scenarios. The project uses Maven for dependency management and building.
 
-## Add your files
+## Features
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://git-ens.enac.fr/sita24/simulateur-de-pilotage-de-drone.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](http://127.0.0.1/sita24/simulateur-de-pilotage-de-drone/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
----
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-
-Choose a self-explaining name for your project.
+- Physics-based drone flight model.
+- 3D first-person view (FPV) and a minimap.
+- Autopilot path planner.
+- World customization via JSON files.
+- Persistent saves in the `saves` directory.
 
 ## Members
 
 - André Vitor Oliveira Brito
+- Bahaeddine Aouanet
 - Gabriela Gomes Cavalcanti Alves Monteiro
 - João Victor Silva Bezerra Nascimento
 
-## Description
+## Requirements
 
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+- Java Development Kit (JDK) 21
+- Maven 3.8+
 
-## Badges
+## Build and Run
 
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+To compile and run the project using Maven, use the following commands:
 
-## Visuals
+```bash
+# Compile the project
+mvn clean compile
 
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+# Run the simulator
+mvn javafx:run
+```
 
-## Installation
+## World Configuration using JSON
 
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+The simulator loads its world and environments from JSON files located in the `saves/` directory. By default, it creates and loads `world_default.json` if it does not exist.
 
-## Usage
+You can create or modify these JSON files to change the drone's spawn position, add obstacles, and change environmental settings (like gravity and colors).
 
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### JSON Structure and Example
 
-## Support
+Here is an example of a valid world configuration JSON file:
 
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```json
+{
+  "worldName" : "Default World",
+  "droneSpawn" : {
+    "posX" : 0.0,
+    "posY" : -30.0,
+    "posZ" : 0.0,
+    "yaw" : 0.0
+  },
+  "objects" : [
+    {
+      "name" : "Ground",
+      "type" : "plane",
+      "posX" : 0.0,
+      "posY" : 0.0,
+      "posZ" : 0.0,
+      "sizeX" : 5000.0,
+      "sizeY" : 1.0,
+      "sizeZ" : 5000.0,
+      "color" : "#228B22"
+    },
+    {
+      "name" : "Reference Tower",
+      "type" : "cylinder",
+      "posX" : 150.0,
+      "posY" : -70.0,
+      "posZ" : 500.0,
+      "sizeX" : 30.0,
+      "sizeY" : 200.0,
+      "sizeZ" : 30.0,
+      "color" : "#FFA500"
+    }
+  ],
+  "environment" : {
+    "skyColor" : "#87CEEB",
+    "groundColor" : "#228B22",
+    "gravity" : 9.81,
+    "showGrid" : true,
+    "showTower" : true
+  }
+}
+```
 
-## Roadmap
+### Explanation of Properties
 
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+- **`worldName`**: The name of the world displayed in the application.
+- **`droneSpawn`**: The starting coordinates `(posX, posY, posZ)` and orientation `yaw` for the drone. Note that the Y-axis might be inverted depending on the 3D engine used.
+- **`objects`**: An array of objects to spawn in the world.
+  - `name`: Identifier for the object.
+  - `type`: Shape of the object (e.g., "plane", "cylinder", "cube").
+  - `posX`, `posY`, `posZ`: Position of the object.
+  - `sizeX`, `sizeY`, `sizeZ`: Dimensions of the object.
+  - `color`: Hex code representing the object's color.
+- **`environment`**: General settings for the simulation physics and visuals.
+  - `skyColor`: Hex code for the sky.
+  - `groundColor`: Hex code for the default ground if a custom one is not provided.
+  - `gravity`: Float value for gravitational force.
+  - `showGrid`: Boolean to show or hide the reference grid.
+  - `showTower`: Boolean to show or hide a default reference tower.
 
-## Contributing
+### Loading Custom Worlds
 
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-
-Show your appreciation to those who have contributed to the project.
-
-## License
-
-For open source projects, say how it is licensed.
-
-## Project status
-
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+1. Create a new `.json` file inside the `saves/` folder following the structure above (e.g., `saves/my_custom_world.json`).
+2. Run the simulator.
+3. In the menu bar at the top, navigate to **Configuration > World Configuration**.
+4. Select your custom world from the list and load it.
