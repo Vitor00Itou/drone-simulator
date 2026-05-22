@@ -14,13 +14,12 @@ public class DroneModel {
 
     private static final double METERS_PER_UNIT = 1.0;
 
-    // Ground level
-    private static final double GROUND_Y = 4.5;
+    // Ground level 
+    private static final double GROUND_Y = 0;
 
     // Drone physical dimensions used by rendering and collision detection
-    private static final double DRONE_WIDTH = 50.0;
-    private static final double DRONE_HEIGHT = 50.0;
-    private static final double DRONE_DEPTH = 50.0;
+    private static final double DRONE_HEIGHT = 0.10;
+    private static final double DRONE_RADIUS = 0.60;
 
 
     private double x = 0;
@@ -279,9 +278,8 @@ public class DroneModel {
 
     // ── Getters ───────────────────────────────────────────────────────
 
-    public double getDroneWidth() { return DRONE_WIDTH; }
+    public double getDroneRadius() { return DRONE_RADIUS; }
     public double getDroneHeight() { return DRONE_HEIGHT; }
-    public double getDroneDepth() { return DRONE_DEPTH; }
 
     public double getX() { return x; }
     public double getY() { return y; }
