@@ -36,7 +36,8 @@ public class CommandHelpPanel extends VBox {
                 createCommandRow("W / S",       "Altitude"),
                 createCommandRow("A / D",       "Heading"),
                 createCommandRow("Up / Down",   "Forward / Backward"),
-                createCommandRow("Left / Right","Lateral Movement")
+                createCommandRow("Left / Right","Lateral Movement"),
+                createCommandRow("H",           "Return to Home (follow trail)")
         );
     }
 

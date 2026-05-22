@@ -14,11 +14,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * Head-up display (HUD) overlay for the drone simulation.
+ * Combines telemetry panel, command help panel, and minimap.
+ */
 public class FpvHudView extends BorderPane {
+    
     private final TelemetryPanel telemetryPanel;
     private final MiniMapView miniMapView;
     
-    // Historique de la trajectoire (coordonnées X, Z)
+    // Flight trail history (X, Z coordinates)
     private final List<double[]> trail = new ArrayList<>();
 
     public FpvHudView() {
@@ -26,15 +31,18 @@ public class FpvHudView extends BorderPane {
         CommandHelpPanel commandHelpPanel = new CommandHelpPanel();
         miniMapView = new MiniMapView();
 
+        // Make panels transparent to mouse clicks so clicks pass through to the minimap
         telemetryPanel.setMouseTransparent(true);
         commandHelpPanel.setMouseTransparent(true);
 
         setPickOnBounds(false);
 
+        // Top: telemetry panel
         setTop(telemetryPanel);
         BorderPane.setAlignment(telemetryPanel, Pos.TOP_CENTER);
         BorderPane.setMargin(telemetryPanel, new Insets(24, 0, 0, 0));
 
+        // Bottom: command help panel on the left, minimap on the right
         Region bottomSpacer = new Region();
         HBox.setHgrow(bottomSpacer, Priority.ALWAYS);
 
@@ -45,32 +53,49 @@ public class FpvHudView extends BorderPane {
         setBottom(bottomOverlay);
     }
 
+    /**
+     * Updates all HUD components with the latest drone state.
+     *
+     * @param model       the drone model containing current state
+     * @param worldConfig the world configuration (obstacles, ground, etc.)
+     */
     public void update(DroneModel model, WorldConfiguration worldConfig) {
         DroneTelemetry telemetry = model.getTelemetry();
         telemetryPanel.update(telemetry);
         miniMapView.render(model, worldConfig);
 
-        // Enregistrement de la position courante pour la trajectoire
+        // Record current position for flight trail
         double x = model.getX();
         double z = model.getZ();
         trail.add(new double[]{x, z});
         
-        // Limitation de la taille de l'historique
+        // Limit trail size to prevent memory issues
         if (trail.size() > 1000) {
             trail.remove(0);
         }
     }
 
+    /**
+     * Registers a callback to be invoked when the user clicks on the minimap.
+     *
+     * @param callback receives the world coordinates {x, z} of the clicked point
+     */
     public void setOnMinimapTargetClicked(Consumer<double[]> callback) {
         miniMapView.setOnTargetClicked(callback);
     }
 
+    /**
+     * Clears the current navigation target cross from the minimap.
+     */
     public void clearMinimapTarget() {
         miniMapView.clearTarget();
     }
 
     /**
-     * Retourne la liste des points de la trajectoire (chaque point = {x, z}).
+     * Returns a copy of the recorded flight trail points.
+     * Each element is a double[] {x, z} in world coordinates.
+     *
+     * @return list of trail points
      */
     public List<double[]> getTrail() {
         return trail;

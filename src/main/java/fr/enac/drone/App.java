@@ -102,6 +102,7 @@ public class App extends Application {
             }
         });
 
+        // Return to Home action (touche H)
         controller.setReturnHomeAction(() -> {
             List<double[]> trail = view.getTrail();
             if (trail.size() < 2) return;

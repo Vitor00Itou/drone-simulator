@@ -12,6 +12,7 @@ import fr.enac.drone.model.drone.DroneModel;
  * Shortcuts:
  *   O → Arm the drone (motors ON  – enables all movement)
  *   F → Disarm / cut motors       (drone falls under gravity to the ground)
+ *   H → Return to Home (follows trail in reverse)
  */
 public class DroneController {
 
