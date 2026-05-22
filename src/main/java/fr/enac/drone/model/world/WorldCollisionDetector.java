@@ -33,34 +33,29 @@ public class WorldCollisionDetector {
                 continue;
             }
 
-            // Check if the drone is landing on top of this object before side collision checks
-            WorldCollision topCollision =
-                    checkTopCollision(drone, object);
-
-            if (topCollision != null) {
-                return topCollision;
-            }
-
             if (!hasVerticalOverlap(drone, object)) {
                 continue;
             }
 
-            if ("cylinder".equals(object.getType())) {
-                WorldCollision collision =
-                        checkCylinderCollision(drone, object);
+            WorldCollision verticalCollision =
+                    checkVerticalCollision(drone, object);
+            WorldCollision horizontalCollision = null;
 
-                if (collision != null) {
-                    return collision;
-                }
+            if ("cylinder".equals(object.getType())) {
+                horizontalCollision =
+                        checkCylinderCollision(drone, object);
             }
 
             if ("box".equals(object.getType())) {
-                WorldCollision collision =
+                horizontalCollision =
                         checkBoxCollision(drone, object);
+            }
 
-                if (collision != null) {
-                    return collision;
-                }
+            WorldCollision collision =
+                    getShallowestCollision(verticalCollision, horizontalCollision);
+
+            if (collision != null) {
+                return collision;
             }
         }
 
@@ -76,6 +71,10 @@ public class WorldCollisionDetector {
             DroneModel drone,
             WorldObject ground
     ) {
+        if (!isHorizontallyOverBoxFootprint(drone, ground)) {
+            return null;
+        }
+
         double droneBottom =
                 drone.getY() + drone.getDroneHeight() / 2.0;
 
@@ -99,36 +98,52 @@ public class WorldCollisionDetector {
     }
 
     /**
-    * Detects whether the drone is landing on top of a solid world object.
-    * This prevents top contact from being handled as a side collision.
+    * Detects vertical contact with a solid world object.
+    * The returned normal points toward the closest vertical exit direction.
     */
-    private WorldCollision checkTopCollision(
+    private WorldCollision checkVerticalCollision(
             DroneModel drone,
             WorldObject object
     ) {
+        if (!isHorizontallyOverObject(drone, object)) {
+            return null;
+        }
+
+        double droneTop =
+                drone.getY() - drone.getDroneHeight() / 2.0;
         double droneBottom =
                 drone.getY() + drone.getDroneHeight() / 2.0;
 
         double objectTop =
                 object.getPosY() - object.getSizeY() / 2.0;
+        double objectBottom =
+                object.getPosY() + object.getSizeY() / 2.0;
 
-        double penetration =
+        double topPenetration =
                 droneBottom - objectTop;
+        double bottomPenetration =
+                objectBottom - droneTop;
 
-        if (penetration <= 0) {
+        if (topPenetration <= 0 || bottomPenetration <= 0) {
             return null;
         }
 
-        if (!isHorizontallyOverObject(drone, object)) {
-            return null;
+        if (topPenetration <= bottomPenetration) {
+            // Y axis points downward in JavaFX, so negative Y pushes the drone upward
+            return new WorldCollision(
+                    0.0,
+                    -1.0,
+                    0.0,
+                    topPenetration
+            );
         }
 
-        // Y axis points downward in JavaFX, so negative Y pushes the drone upward
+        // Positive Y pushes the drone downward when it hits an object's underside
         return new WorldCollision(
                 0.0,
-                -1.0,
+                1.0,
                 0.0,
-                penetration
+                bottomPenetration
         );
     }
 
@@ -157,19 +172,26 @@ public class WorldCollisionDetector {
         }
 
         if ("box".equals(object.getType())) {
-            double droneHalfWidth = drone.getDroneWidth() / 2.0;
-            double droneHalfDepth = drone.getDroneDepth() / 2.0;
-
-            double boxHalfWidth = object.getSizeX() / 2.0;
-            double boxHalfDepth = object.getSizeZ() / 2.0;
-
-            return drone.getX() >= object.getPosX() - boxHalfWidth - droneHalfWidth
-                    && drone.getX() <= object.getPosX() + boxHalfWidth + droneHalfWidth
-                    && drone.getZ() >= object.getPosZ() - boxHalfDepth - droneHalfDepth
-                    && drone.getZ() <= object.getPosZ() + boxHalfDepth + droneHalfDepth;
+            return isHorizontallyOverBoxFootprint(drone, object);
         }
 
         return false;
+    }
+
+    private boolean isHorizontallyOverBoxFootprint(
+            DroneModel drone,
+            WorldObject object
+    ) {
+        double droneHalfWidth = drone.getDroneWidth() / 2.0;
+        double droneHalfDepth = drone.getDroneDepth() / 2.0;
+
+        double boxHalfWidth = object.getSizeX() / 2.0;
+        double boxHalfDepth = object.getSizeZ() / 2.0;
+
+        return drone.getX() >= object.getPosX() - boxHalfWidth - droneHalfWidth
+                && drone.getX() <= object.getPosX() + boxHalfWidth + droneHalfWidth
+                && drone.getZ() >= object.getPosZ() - boxHalfDepth - droneHalfDepth
+                && drone.getZ() <= object.getPosZ() + boxHalfDepth + droneHalfDepth;
     }
 
     /**
@@ -254,5 +276,24 @@ public class WorldCollisionDetector {
 
         double normalZ = dz >= 0 ? 1.0 : -1.0;
         return new WorldCollision(0.0, 0.0, normalZ, overlapZ);
+    }
+
+    private WorldCollision getShallowestCollision(
+            WorldCollision first,
+            WorldCollision second
+    ) {
+        if (first == null) {
+            return second;
+        }
+
+        if (second == null) {
+            return first;
+        }
+
+        if (first.getPenetration() <= second.getPenetration()) {
+            return first;
+        }
+
+        return second;
     }
 }

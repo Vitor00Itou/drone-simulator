@@ -14,17 +14,16 @@ public class DroneModel {
 
     private static final double METERS_PER_UNIT = 1.0;
 
-    // Ground level
-    private static final double GROUND_Y = 4.5;
-
     // Drone physical dimensions used by rendering and collision detection
     private static final double DRONE_WIDTH = 50.0;
     private static final double DRONE_HEIGHT = 50.0;
     private static final double DRONE_DEPTH = 50.0;
 
+    // Default center position when the drone rests on the default ground plane.
+    private static final double GROUND_Y = -0.5 - DRONE_HEIGHT / 2.0;
 
     private double x = 0;
-    private double y = GROUND_Y - DRONE_HEIGHT / 2.0;
+    private double y = GROUND_Y;
     private double z = 0;
 
     private double yaw = 0;
@@ -47,7 +46,7 @@ public class DroneModel {
     // Collision response constants
     private static final double COLLISION_RESTITUTION = 0.35;
     private static final double COLLISION_FRICTION = 0.75;
-    private static final double COLLISION_SKIN = 1.0;
+    private static final double COLLISION_SKIN = 0.01;
 
     // Physics constants
     private static final double ACCELERATION_HORIZONTAL = 8.0;
