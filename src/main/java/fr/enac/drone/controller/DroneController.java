@@ -49,6 +49,10 @@ public class DroneController {
         activeKeys.remove(code);
     }
 
+    public void clearKeys() {
+        activeKeys.clear();
+    }
+
     public void setAutopilot(Autopilot autopilot) {
         this.autopilot = autopilot;
         if (autopilot == null) {
@@ -120,7 +124,7 @@ public class DroneController {
                 double yawCmd = cmd[0];        // -1..1, >0 = droite
                 double pitchCmd = cmd[1];      // -1..1, >0 = avant
 
-                double desiredYawRate = yawCmd * 40.0; // °/s
+                double desiredYawRate = yawCmd * model.getYawRateDegreesPerSecond();
                 model.setTargetYawVelocity(desiredYawRate);
                 model.updateYaw(deltaTime);
 

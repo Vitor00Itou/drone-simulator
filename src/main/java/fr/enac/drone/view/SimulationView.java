@@ -21,6 +21,7 @@ import javafx.scene.PointLight;
 
 import java.util.Objects;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -40,13 +41,18 @@ public class SimulationView {
 
     private final FpvHudView hudView;
 
+    private final SettingsView settingsView;
+
     private final WorldConfiguration worldConfig;
 
     private final SceneMaterialFactory materialFactory;
 
     public SimulationView(
             DroneModel model,
-            WorldConfiguration worldConfig
+            WorldConfiguration worldConfig,
+            String currentWorldFilename,
+            BiConsumer<WorldConfiguration, String> onWorldApplied,
+            SettingsView.State settingsState
     ) {
 
         this.model =
@@ -62,6 +68,7 @@ public class SimulationView {
                 );
 
         this.root = new BorderPane();
+        this.root.setFocusTraversable(true);
         this.materialFactory = new SceneMaterialFactory();
 
         // ── 3D scene root ──────────────────────────────────────────────
@@ -142,9 +149,18 @@ public class SimulationView {
         StackPane viewport =
                 new StackPane(sizingPane, subScene);
 
-        hudView = new FpvHudView(model);
+        hudView = new FpvHudView();
 
         viewport.getChildren().add(hudView);
+
+        settingsView = new SettingsView(
+                model,
+                worldConfig,
+                currentWorldFilename,
+                onWorldApplied,
+                settingsState
+        );
+        viewport.getChildren().add(settingsView);
 
         // Root
         root.setCenter(viewport);
@@ -278,5 +294,21 @@ public class SimulationView {
      */
     public void setMinimapTargetHandler(Consumer<double[]> handler) {
         hudView.setOnMinimapTargetClicked(handler);
+    }
+
+    public boolean isSettingsDrawerOpen() {
+        return settingsView.isOpen();
+    }
+
+    public void closeSettingsDrawer() {
+        settingsView.close();
+    }
+
+    public void setSettingsDrawerOpenedHandler(Runnable handler) {
+        settingsView.setOnOpened(handler);
+    }
+
+    public void setSettingsDrawerClosedHandler(Runnable handler) {
+        settingsView.setOnClosed(handler);
     }
 }

@@ -235,7 +235,7 @@ public class DroneModel {
     public void yawLeft(double deltaTime) {
         if (!armed) return;
 
-        double targetYawVelocity = -YAW_RATE * yawSensitivity;
+        double targetYawVelocity = -getYawRateDegreesPerSecond();
         yawVelocity +=
                 (targetYawVelocity - yawVelocity)
                         * YAW_ACCELERATION
@@ -246,7 +246,7 @@ public class DroneModel {
     public void yawRight(double deltaTime) {
         if (!armed) return;
 
-        double targetYawVelocity = YAW_RATE * yawSensitivity;
+        double targetYawVelocity = getYawRateDegreesPerSecond();
         yawVelocity +=
                 (targetYawVelocity - yawVelocity)
                         * YAW_ACCELERATION
@@ -273,6 +273,16 @@ public class DroneModel {
 
     public void clearTargetYaw() {
         this.useTargetYaw = false;
+    }
+
+    public void resetFlightSettings() {
+        setYawSensitivity(DroneControlSettings.YAW_SENSITIVITY.getDefaultValue());
+        setMaxHorizontalSpeed(DroneControlSettings.MAX_HORIZONTAL_SPEED.getDefaultValue());
+        setMaxVerticalSpeed(DroneControlSettings.MAX_VERTICAL_SPEED.getDefaultValue());
+    }
+
+    public double getYawRateDegreesPerSecond() {
+        return YAW_RATE * yawSensitivity;
     }
 
     // ── Getters ───────────────────────────────────────────────────────
@@ -374,7 +384,6 @@ public class DroneModel {
                 armed
         );
     }
-
     /**
     * Resolves either a ground or horizontal collision using collision data.
     */

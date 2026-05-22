@@ -3,19 +3,19 @@ package fr.enac.drone;
 import fr.enac.drone.controller.Autopilot;
 import fr.enac.drone.controller.DroneController;
 import fr.enac.drone.model.PathPlanner;
+import fr.enac.drone.model.drone.DroneControlSettings;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.drone.DroneSpawn;
 import fr.enac.drone.model.world.WorldConfiguration;
 import fr.enac.drone.model.world.WorldPersistence;
 import fr.enac.drone.model.world.WorldCollisionDetector;
+import fr.enac.drone.view.SettingsView;
 import fr.enac.drone.view.SimulationView;
-import fr.enac.drone.view.WorldConfigMenu;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
@@ -32,10 +32,18 @@ public class App extends Application {
 
     private Scene scene;
     private BorderPane root;
-    private MenuBar menuBar;
+    private EventHandler<KeyEvent> settingsDismissFilter;
 
     private WorldConfiguration worldConfig;
     private AnimationTimer gameLoop;
+
+    private double droneYawSensitivity =
+            DroneControlSettings.YAW_SENSITIVITY.getDefaultValue();
+    private double droneMaxHorizontalSpeed =
+            DroneControlSettings.MAX_HORIZONTAL_SPEED.getDefaultValue();
+    private double droneMaxVerticalSpeed =
+            DroneControlSettings.MAX_VERTICAL_SPEED.getDefaultValue();
+    private final SettingsView.State settingsState = new SettingsView.State();
 
     private DroneModel model;
     private DroneController controller;
@@ -46,10 +54,7 @@ public class App extends Application {
 
         loadOrCreateDefaultWorld();
 
-        createMenuBar();
-
         root = new BorderPane();
-        root.setTop(menuBar);
 
         scene = new Scene(root, 800, 600);
 
@@ -127,8 +132,18 @@ public class App extends Application {
         WorldCollisionDetector collisionDetector = new WorldCollisionDetector(worldConfig);
 
         model = new DroneModel();
+        model.setYawSensitivity(droneYawSensitivity);
+        model.setMaxHorizontalSpeed(droneMaxHorizontalSpeed);
+        model.setMaxVerticalSpeed(droneMaxVerticalSpeed);
+
         controller = new DroneController(model, collisionDetector);
-        view = new SimulationView(model, worldConfig);
+        view = new SimulationView(
+                model,
+                worldConfig,
+                currentWorldFilename,
+                this::handleWorldLoaded,
+                settingsState
+        );
 
         DroneSpawn spawn = worldConfig.getDroneSpawn();
 
@@ -146,6 +161,23 @@ public class App extends Application {
 
         Objects.requireNonNull(view).getRoot().requestFocus();
 
+        view.setSettingsDrawerOpenedHandler(controller::clearKeys);
+        view.setSettingsDrawerClosedHandler(() -> view.getRoot().requestFocus());
+
+        if (settingsDismissFilter != null) {
+            scene.removeEventFilter(KeyEvent.ANY, settingsDismissFilter);
+        }
+
+        settingsDismissFilter = event -> {
+            if (view != null && view.isSettingsDrawerOpen()) {
+                view.closeSettingsDrawer();
+                controller.clearKeys();
+                view.getRoot().requestFocus();
+                event.consume();
+            }
+        };
+
+        scene.addEventFilter(KeyEvent.ANY, settingsDismissFilter);
         scene.setOnKeyPressed(e -> controller.addKey(e.getCode()));
         scene.setOnKeyReleased(e -> controller.removeKey(e.getCode()));
     }
@@ -175,39 +207,25 @@ public class App extends Application {
         gameLoop.start();
     }
 
-    private void createMenuBar() {
-
-        menuBar = new MenuBar();
-
-        Menu configMenu = new Menu("Configuration");
-
-        MenuItem worldConfigItem = new MenuItem("World Configuration");
-
-        worldConfigItem.setOnAction(e -> handleWorldConfigurationMenu());
-
-        configMenu.getItems().add(worldConfigItem);
-
-        menuBar.getMenus().add(configMenu);
-    }
-
-    private void handleWorldConfigurationMenu() {
-
-        WorldConfigMenu dialog =
-                new WorldConfigMenu(
-                        worldConfig,
-                        currentWorldFilename,
-                        this::handleWorldLoaded
-                );
-
-        dialog.showAndWait();
-    }
-
     private void handleWorldLoaded(WorldConfiguration config, String filename) {
+
+        preserveDroneSettings();
 
         this.worldConfig = Objects.requireNonNull(config);
         this.currentWorldFilename = Objects.requireNonNull(filename);
+        settingsState.setSelectedWorldFilename(filename);
 
         initializeSimulation();
+    }
+
+    private void preserveDroneSettings() {
+        if (model == null) {
+            return;
+        }
+
+        droneYawSensitivity = model.getYawSensitivity();
+        droneMaxHorizontalSpeed = model.getMaxHorizontalSpeed();
+        droneMaxVerticalSpeed = model.getMaxVerticalSpeed();
     }
 
     public static void main(String[] args) {
