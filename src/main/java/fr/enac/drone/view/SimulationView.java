@@ -34,7 +34,7 @@ public class SimulationView {
 
     private final DroneModel model;
 
-    private final Box droneVisual;
+    private final Cylinder droneVisual;
 
     private final PerspectiveCamera camera;
 
@@ -68,7 +68,7 @@ public class SimulationView {
         Group sceneRoot = new Group();
 
         // Drone visual
-        droneVisual = new Box(50, 50, 50);
+        droneVisual = new Cylinder(0.60, 0.10);
 
         droneVisual.setRotationAxis(Rotate.Y_AXIS);
         droneVisual.setMaterial(materialFactory.createDroneMaterial());
@@ -83,6 +83,27 @@ public class SimulationView {
                 sceneRoot.getChildren().add(visualObject);
             }
         }
+
+        // ── Generate Drone Spawn Base ──────────────────────────────────
+        fr.enac.drone.model.drone.DroneSpawn spawn = worldConfig.getDroneSpawn();
+        double spawnY = spawn.getPosY();
+        double droneBottomY = spawnY + 0.05; // Drone cylinder height is 0.10, so bottom is +0.05 in local Y
+        
+        double baseHeight;
+        double baseY;
+        double baseRadius;
+        
+        baseHeight = -droneBottomY;
+        baseY = droneBottomY + baseHeight / 2.0;
+        baseRadius = 20.0;
+        
+        Cylinder spawnBase = new Cylinder(baseRadius, baseHeight);
+        spawnBase.setTranslateX(spawn.getPosX());
+        spawnBase.setTranslateY(baseY);
+        spawnBase.setTranslateZ(spawn.getPosZ());
+        spawnBase.setMaterial(new PhongMaterial(Color.DARKGRAY));
+        
+        sceneRoot.getChildren().add(spawnBase);
 
         // Soft ambient light to avoid completely dark areas
         AmbientLight ambientLight = new AmbientLight(Color.rgb(110, 110, 110));
@@ -123,6 +144,8 @@ public class SimulationView {
         camera.setRotationAxis(Rotate.Y_AXIS);
 
         camera.setNearClip(0.1);
+
+        camera.setLayoutX(10);
 
         camera.setFarClip(5000.0);
 

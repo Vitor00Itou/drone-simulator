@@ -12,8 +12,8 @@ public class DroneModel {
 
     private static final double METERS_PER_UNIT = 1.0;
 
-    // Ground level
-    private static final double GROUND_Y = 4.5;
+    // Ground level 
+    private static final double GROUND_Y = 0;
 
     private double x = 0;
     private double y = GROUND_Y;
