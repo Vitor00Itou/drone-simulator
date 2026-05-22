@@ -7,6 +7,7 @@ import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.drone.DroneSpawn;
 import fr.enac.drone.model.world.WorldConfiguration;
 import fr.enac.drone.model.world.WorldPersistence;
+import fr.enac.drone.model.world.WorldCollisionDetector;
 import fr.enac.drone.view.SimulationView;
 import fr.enac.drone.view.WorldConfigMenu;
 import javafx.animation.AnimationTimer;
@@ -123,8 +124,10 @@ public class App extends Application {
 
     private void createMvcComponents() {
 
+        WorldCollisionDetector collisionDetector = new WorldCollisionDetector(worldConfig);
+
         model = new DroneModel();
-        controller = new DroneController(model);
+        controller = new DroneController(model, collisionDetector);
         view = new SimulationView(model, worldConfig);
 
         DroneSpawn spawn = worldConfig.getDroneSpawn();

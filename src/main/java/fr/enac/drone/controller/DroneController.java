@@ -4,6 +4,8 @@ import javafx.scene.input.KeyCode;
 import java.util.HashSet;
 import java.util.Set;
 import fr.enac.drone.model.drone.DroneModel;
+import fr.enac.drone.model.world.WorldCollision;
+import fr.enac.drone.model.world.WorldCollisionDetector;
 
 /**
  * Tracks active keys and processes continuous movement logic
@@ -17,14 +19,16 @@ import fr.enac.drone.model.drone.DroneModel;
 public class DroneController {
 
     private final DroneModel model;
+    private final WorldCollisionDetector collisionDetector;
     // Tracks currently pressed keys to allow simultaneous inputs
     private final Set<KeyCode> activeKeys = new HashSet<>();
     private Autopilot autopilot;
     private Runnable onAutopilotFinished; // callback pour effacer la cible
     private Runnable returnHomeAction;    // callback pour retour à la maison
 
-    public DroneController(DroneModel model) {
+    public DroneController(DroneModel model, WorldCollisionDetector collisionDetector) {
         this.model = model;
+        this.collisionDetector = collisionDetector;
     }
 
     /** Adds a key to the active set when pressed, and handles one-shot actions. */
@@ -61,6 +65,35 @@ public class DroneController {
     }
 
     /**
+     * Applies drone physics and resolves collisions using the drone inertia.
+     */
+    private void updatePhysicsWithCollision(
+            double pitchInput,
+            double rollInput,
+            double throttleInput,
+            double deltaTime
+    ) {
+        model.updatePhysics(
+                pitchInput,
+                rollInput,
+                throttleInput,
+                deltaTime
+        );
+
+        //Allows the handle of up to 3 collisions at a time
+        for (int i = 0; i < 3; i++) {
+            WorldCollision collision =
+                    collisionDetector.findCollision(model);
+
+            if (collision == null) {
+                break;
+            }
+
+            model.resolveCollision(collision);
+        }
+    }
+
+    /**
      * Evaluates all currently active keys and updates the model.
      * Designed to be called continuously inside a Game Loop (60 FPS).
      * Movement is blocked when the drone is not armed.
@@ -92,7 +125,7 @@ public class DroneController {
                 model.updateYaw(deltaTime);
 
                 pitchInput = pitchCmd;
-                model.updatePhysics(pitchInput, 0, throttleInput, deltaTime);
+                updatePhysicsWithCollision(pitchInput, 0, throttleInput, deltaTime);
                 return;
             }
         }
@@ -119,8 +152,12 @@ public class DroneController {
         if (activeKeys.contains(KeyCode.RIGHT)) rollInput  += 1;
         if (activeKeys.contains(KeyCode.LEFT))  rollInput  -= 1;
 
-        // Inject the exact time elapsed into the physics engine
-        // DroneModel.updatePhysics handles armed/falling states internally
-        model.updatePhysics(pitchInput, rollInput, throttleInput, deltaTime);
+        // Update drone movement while preserving inertia and handling collisions
+        updatePhysicsWithCollision(
+            pitchInput,
+            rollInput,
+            throttleInput,
+            deltaTime
+        );
     }
 }

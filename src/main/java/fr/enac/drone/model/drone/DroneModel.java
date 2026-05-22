@@ -1,5 +1,7 @@
 package fr.enac.drone.model.drone;
 
+import fr.enac.drone.model.world.WorldCollision;
+
 import fr.enac.drone.utils.MathUtils;
 
 /**
@@ -15,8 +17,14 @@ public class DroneModel {
     // Ground level
     private static final double GROUND_Y = 4.5;
 
+    // Drone physical dimensions used by rendering and collision detection
+    private static final double DRONE_WIDTH = 50.0;
+    private static final double DRONE_HEIGHT = 50.0;
+    private static final double DRONE_DEPTH = 50.0;
+
+
     private double x = 0;
-    private double y = GROUND_Y;
+    private double y = GROUND_Y - DRONE_HEIGHT / 2.0;
     private double z = 0;
 
     private double yaw = 0;
@@ -35,6 +43,11 @@ public class DroneModel {
 
     // Falling state
     private boolean falling = false;
+
+    // Collision response constants
+    private static final double COLLISION_RESTITUTION = 0.35;
+    private static final double COLLISION_FRICTION = 0.75;
+    private static final double COLLISION_SKIN = 1.0;
 
     // Physics constants
     private static final double ACCELERATION_HORIZONTAL = 8.0;
@@ -116,11 +129,6 @@ public class DroneModel {
         if (falling) {
             velocityY += GRAVITY * deltaTime;
             this.y += velocityY * deltaTime;
-            if (this.y >= GROUND_Y) {
-                this.y = GROUND_Y;
-                velocityY = 0;
-                falling = false;
-            }
             return;
         }
 
@@ -188,14 +196,6 @@ public class DroneModel {
         this.x += velocityX * deltaTime;
         this.z += velocityZ * deltaTime;
         this.y += velocityY * deltaTime;
-
-        // Prevent underground movement
-        if (this.y > GROUND_Y) {
-            this.y = GROUND_Y;
-            if (velocityY > 0) {
-                velocityY = 0;
-            }
-        }
 
         // ── Battery drain ─────────────────────────────────────────────
         double altitudeMeters =
@@ -278,6 +278,10 @@ public class DroneModel {
     }
 
     // ── Getters ───────────────────────────────────────────────────────
+
+    public double getDroneWidth() { return DRONE_WIDTH; }
+    public double getDroneHeight() { return DRONE_HEIGHT; }
+    public double getDroneDepth() { return DRONE_DEPTH; }
 
     public double getX() { return x; }
     public double getY() { return y; }
@@ -372,5 +376,78 @@ public class DroneModel {
                 getBatteryPercentage(),
                 armed
         );
+    }
+
+    /**
+    * Resolves either a ground or horizontal collision using collision data.
+    */
+    public void resolveCollision(WorldCollision collision) {
+        if (collision.isVerticalCollision()) {
+                resolveVerticalCollision(collision);
+                return;
+        }
+
+        resolveHorizontalCollision(
+                collision.getNormalX(),
+                collision.getNormalZ(),
+                collision.getPenetration()
+        );
+    }
+
+    /**
+    * Pushes the drone out of a collided object and reflects its horizontal velocity.
+    * This preserves inertia while creating a bounce effect.
+    */
+    public void resolveHorizontalCollision(double normalX, double normalZ, double penetration) {
+        double length = Math.sqrt(normalX * normalX + normalZ * normalZ);
+
+        if (length < 0.0001) {
+                return;
+        }
+
+        normalX /= length;
+        normalZ /= length;
+
+        // Move the drone slightly outside the obstacle to avoid sticking
+        double correction = penetration + COLLISION_SKIN;
+        this.x += normalX * correction;
+        this.z += normalZ * correction;
+
+        // Decompose velocity into normal and tangential components
+        double normalVelocity = velocityX * normalX + velocityZ * normalZ;
+
+        double tangentVelocityX = velocityX - normalVelocity * normalX;
+        double tangentVelocityZ = velocityZ - normalVelocity * normalZ;
+
+        // Reflect only if the drone is moving into the obstacle
+        if (normalVelocity < 0) {
+                double bouncedNormalVelocity = -normalVelocity * COLLISION_RESTITUTION;
+
+                velocityX = tangentVelocityX * COLLISION_FRICTION + bouncedNormalVelocity * normalX;
+                velocityZ = tangentVelocityZ * COLLISION_FRICTION + bouncedNormalVelocity * normalZ;
+        } else {
+                velocityX *= COLLISION_FRICTION;
+                velocityZ *= COLLISION_FRICTION;
+        }
+    }
+
+    /**
+    * Resolves vertical collisions without affecting horizontal inertia.
+    */
+    private void resolveVerticalCollision(WorldCollision collision) {
+        double correction = collision.getPenetration() + COLLISION_SKIN;
+
+        this.y += collision.getNormalY() * correction;
+
+        // Stop downward inertia when landing on a surface
+        if (collision.getNormalY() < 0 && velocityY > 0) {
+                velocityY = 0;
+                falling = false;
+        }
+
+        // Stop upward inertia when hitting the bottom of an object
+        if (collision.getNormalY() > 0 && velocityY < 0) {
+                velocityY = 0;
+        }
     }
 }

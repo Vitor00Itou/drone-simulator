@@ -68,7 +68,11 @@ public class SimulationView {
         Group sceneRoot = new Group();
 
         // Drone visual
-        droneVisual = new Box(50, 50, 50);
+        droneVisual = new Box(
+                model.getDroneWidth(),
+                model.getDroneHeight(),
+                model.getDroneDepth()
+        );
 
         droneVisual.setRotationAxis(Rotate.Y_AXIS);
         droneVisual.setMaterial(materialFactory.createDroneMaterial());
