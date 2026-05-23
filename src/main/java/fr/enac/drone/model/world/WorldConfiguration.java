@@ -23,6 +23,7 @@ public class WorldConfiguration {
         this.droneSpawn = new DroneSpawn();
         this.objects = createDefaultObjects();
         this.environment = new WorldEnvironment();
+        updateSpawnBase();
     }
 
     public WorldConfiguration(String worldName) {
@@ -30,6 +31,7 @@ public class WorldConfiguration {
         this.droneSpawn = new DroneSpawn();
         this.objects = createDefaultObjects();
         this.environment = new WorldEnvironment();
+        updateSpawnBase();
     }
 
     // Getters and Setters with validation
@@ -73,12 +75,30 @@ public class WorldConfiguration {
         this.environment = Objects.requireNonNull(environment, "Environment cannot be null");
     }
 
+    public void updateSpawnBase() {
+        if (this.droneSpawn == null || this.objects == null) return;
+
+        this.objects.removeIf(obj -> "Spawn Base".equals(obj.getName()));
+
+        double spawnY = this.droneSpawn.getPosY();
+        double droneBottomY = spawnY + 0.05;
+        double baseHeight = Math.max(0.1, -droneBottomY);
+        double baseY = droneBottomY + baseHeight / 2.0;
+        double baseRadius = 20.0;
+
+        WorldObject spawnBase = new WorldObject(
+                "Spawn Base", "cylinder", this.droneSpawn.getPosX(), baseY, this.droneSpawn.getPosZ(),
+                baseRadius, baseHeight, baseRadius, "#A9A9A9"
+        );
+        this.objects.add(spawnBase);
+    }
+
     public void generateRandomObstacles(int obstacleCount) {
         List<WorldObject> newObjects = new ArrayList<>();
 
-        // Keep the ground plane
+        // Keep the ground plane and spawn base, but remove other objects
         for (WorldObject object : objects) {
-            if ("plane".equals(object.getType())) {
+            if ("plane".equals(object.getType()) || "Spawn Base".equals(object.getName())) {
                 newObjects.add(object);
             }
         }
