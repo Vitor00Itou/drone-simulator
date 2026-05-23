@@ -1,7 +1,9 @@
+@SuppressWarnings("module")
 module fr.enac.drone {
     requires javafx.controls;
     requires transitive javafx.graphics;
     requires com.fasterxml.jackson.databind;
+    requires jamepad;
     
     exports fr.enac.drone;
     exports fr.enac.drone.model;

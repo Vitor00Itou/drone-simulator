@@ -23,12 +23,20 @@ public class DroneController {
     // Tracks currently pressed keys to allow simultaneous inputs
     private final Set<KeyCode> activeKeys = new HashSet<>();
     private Autopilot autopilot;
-    private Runnable onAutopilotFinished; // callback pour effacer la cible
-    private Runnable returnHomeAction;    // callback pour retour à la maison
+    private Runnable onAutopilotFinished; // Callback to clear the target
+    private Runnable returnHomeAction;    // Callback for returning home
+    private final JoystickService joystickService;
 
     public DroneController(DroneModel model, WorldCollisionDetector collisionDetector) {
         this.model = model;
         this.collisionDetector = collisionDetector;
+        this.joystickService = new JoystickService();
+        this.joystickService.start();
+    }
+
+    // Useful to gracefully shut down SDL when the window is closed
+    public void stop() {
+        this.joystickService.stop();
     }
 
     /** Adds a key to the active set when pressed, and handles one-shot actions. */
@@ -84,7 +92,7 @@ public class DroneController {
                 deltaTime
         );
 
-        //Allows the handle of up to 3 collisions at a time
+        // Allows handling of up to 3 collisions at a time
         for (int i = 0; i < 3; i++) {
             WorldCollision collision =
                     collisionDetector.findCollision(model);
@@ -105,6 +113,15 @@ public class DroneController {
      */
     public void update(double deltaTime) {
 
+        joystickService.update();
+        
+        if (joystickService.isArmPressed()) {
+            model.arm();
+        }
+        if (joystickService.isDisarmPressed()) {
+            model.disarm();
+        }
+
         if (returnHomeAction != null && activeKeys.contains(KeyCode.H)) {
             returnHomeAction.run();
             activeKeys.remove(KeyCode.H); 
@@ -121,8 +138,8 @@ public class DroneController {
                 setAutopilot(null);
             } else {
                 double[] cmd = autopilot.computeControls(model.getX(), model.getZ(), model.getYaw());
-                double yawCmd = cmd[0];        // -1..1, >0 = droite
-                double pitchCmd = cmd[1];      // -1..1, >0 = avant
+                double yawCmd = cmd[0];        // -1..1, >0 = right
+                double pitchCmd = cmd[1];      // -1..1, >0 = forward
 
                 double desiredYawRate = yawCmd * model.getYawRateDegreesPerSecond();
                 model.setTargetYawVelocity(desiredYawRate);
@@ -143,18 +160,31 @@ public class DroneController {
         if (activeKeys.contains(KeyCode.A)) model.yawLeft(deltaTime);
         if (activeKeys.contains(KeyCode.D)) model.yawRight(deltaTime);
 
+        double joyYaw = joystickService.getYaw();
+        if (joyYaw < 0) model.yawLeft(deltaTime * Math.abs(joyYaw));
+        if (joyYaw > 0) model.yawRight(deltaTime * joyYaw);
+
         // Update yaw inertia (always called to apply drag when no input)
         model.updateYaw(deltaTime);
 
         // Throttle
         if (activeKeys.contains(KeyCode.W)) throttleInput -= 1;
         if (activeKeys.contains(KeyCode.S)) throttleInput += 1;
+        throttleInput += joystickService.getThrottle();
 
         // Pitch and Roll
         if (activeKeys.contains(KeyCode.UP))    pitchInput += 1;
         if (activeKeys.contains(KeyCode.DOWN))  pitchInput -= 1;
+        pitchInput += joystickService.getPitch();
+
         if (activeKeys.contains(KeyCode.RIGHT)) rollInput  += 1;
         if (activeKeys.contains(KeyCode.LEFT))  rollInput  -= 1;
+        rollInput += joystickService.getRoll();
+
+        // Clamp inputs between -1 and 1 to prevent keyboard + joystick from doubling the speed
+        pitchInput = Math.max(-1, Math.min(1, pitchInput));
+        rollInput = Math.max(-1, Math.min(1, rollInput));
+        throttleInput = Math.max(-1, Math.min(1, throttleInput));
 
         // Update drone movement while preserving inertia and handling collisions
         updatePhysicsWithCollision(

@@ -27,6 +27,11 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.15.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.badlogicgames.jamepad</groupId>
+            <artifactId>jamepad</artifactId>
+            <version>2.30.0.0</version>
+        </dependency>
     </dependencies>
     
     <build>
@@ -47,7 +52,7 @@
                     <execution>
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>fr.enac.drone.App</mainClass>
+                            <mainClass>fr.enac.drone/fr.enac.drone.App</mainClass>
                         </configuration>
                     </execution>
                 </executions>
