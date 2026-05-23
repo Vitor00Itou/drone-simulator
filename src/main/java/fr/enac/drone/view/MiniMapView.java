@@ -1,5 +1,6 @@
 package fr.enac.drone.view;
 
+import fr.enac.drone.model.SimulationState;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.world.WorldConfiguration;
 import fr.enac.drone.model.world.WorldObject;
@@ -18,6 +19,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -25,20 +27,32 @@ import java.util.function.Consumer;
  * Minimap HUD element displaying a top-down radar view centered on the drone.
  */
 public class MiniMapView extends StackPane {
-    
+
+    private static final double MAP_SIZE = 240.0;
+    private static final double MAP_FRAME_HEIGHT = MAP_SIZE + 60;
+    private static final double TRAIL_MIN_DISTANCE = 1;
+    private static final int MAX_TRAIL_POINTS = 2000;
+
     private final Canvas canvas;
+    private final Slider zoomSlider;
+    // Flight trail history (X, Z coordinates)
+    private final List<double[]> trailPoints = new ArrayList<>();
+
     private Consumer<double[]> onTargetClicked;
     private double[] targetPos = null;
-
-    private static final double MAP_SIZE = 240.0; 
     private double viewRadius = 1000.0; // Default Zoom limit: 1km around the drone
-
     private double lastDroneX = 0;
     private double lastDroneZ = 0;
     private double lastDroneYaw = 0;
-    private final Slider zoomSlider;
+    private double lastTrailX = 0;
+    private double lastTrailZ = 0;
+    private boolean trailInitialized = false;
 
     public MiniMapView() {
+        setMinSize(MAP_SIZE, MAP_FRAME_HEIGHT);
+        setPrefSize(MAP_SIZE, MAP_FRAME_HEIGHT);
+        setMaxSize(MAP_SIZE, MAP_FRAME_HEIGHT);
+
         canvas = new Canvas(MAP_SIZE, MAP_SIZE);
 
         // Circular radar styling
@@ -47,10 +61,9 @@ public class MiniMapView extends StackPane {
                  "-fx-border-radius: 200; " +
                  "-fx-background-radius: 200; " +
                  "-fx-background-color: rgba(15, 20, 25, 0.85);");
-        
+
         Circle clip = new Circle(MAP_SIZE / 2, MAP_SIZE / 2, MAP_SIZE / 2);
         canvas.setClip(clip);
-
         canvas.setOnMouseClicked(this::handleMouseClicked);
 
         // Zoom Slider on the right side of the minimap
@@ -59,7 +72,7 @@ public class MiniMapView extends StackPane {
         zoomSlider.setMaxHeight(140);
         zoomSlider.setFocusTraversable(false);
         zoomSlider.setStyle("-fx-control-inner-background: rgba(0, 0, 0, 0.97); -fx-accent: #6acaff;");
-        
+
         StackPane.setAlignment(zoomSlider, Pos.CENTER_RIGHT);
         StackPane.setMargin(zoomSlider, new Insets(0, -25, 0, 0)); // Negative margin pushes it outside
         zoomSlider.valueProperty().addListener((obs, oldVal, newVal) -> viewRadius = newVal.doubleValue());
@@ -72,7 +85,7 @@ public class MiniMapView extends StackPane {
         // Mouse scroll for natural zooming
         setOnScroll(event -> {
             double zoomFactor = event.getDeltaY() > 0 ? -150 : 150;
-            zoomSlider.setValue(zoomSlider.getValue() + zoomFactor);
+            adjustZoom(zoomFactor);
         });
 
         getChildren().addAll(canvas, zoomSlider);
@@ -85,22 +98,33 @@ public class MiniMapView extends StackPane {
     public void clearTarget() {
         this.targetPos = null;
     }
-    
+
     public void adjustZoom(double delta) {
         zoomSlider.setValue(zoomSlider.getValue() + delta);
     }
-    
+
     public double getZoom() {
         return viewRadius;
     }
-    
+
     public void setZoom(double zoom) {
         zoomSlider.setValue(zoom);
     }
 
+    public List<double[]> getTrail() {
+        return new ArrayList<>(trailPoints);
+    }
+
+    public void clearTrail() {
+        trailPoints.clear();
+        trailInitialized = false;
+        lastTrailX = 0;
+        lastTrailZ = 0;
+    }
+
     private void handleMouseClicked(MouseEvent event) {
         if (onTargetClicked == null) return;
-        
+
         double dx = event.getX() - MAP_SIZE / 2.0;
         double dy = event.getY() - MAP_SIZE / 2.0;
 
@@ -121,10 +145,19 @@ public class MiniMapView extends StackPane {
         onTargetClicked.accept(targetPos);
     }
 
-    public void render(DroneModel model, WorldConfiguration config, List<double[]> trail) {
-        this.lastDroneX = model.getX();
-        this.lastDroneZ = model.getZ();
-        this.lastDroneYaw = model.getYaw();
+    public void render(
+            DroneModel model,
+            WorldConfiguration config,
+            SimulationState simulationState
+    ) {
+        lastDroneX = model.getX();
+        lastDroneZ = model.getZ();
+        lastDroneYaw = model.getYaw();
+
+        if (simulationState == SimulationState.RUNNING) {
+            // Record current position for flight trail
+            updateTrail(model);
+        }
 
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, MAP_SIZE, MAP_SIZE);
@@ -134,16 +167,18 @@ public class MiniMapView extends StackPane {
         double groundX = 0.0;
         double groundZ = 0.0;
         Color groundColor = Color.rgb(34, 139, 34); 
-        
+
         for (WorldObject obj : config.getObjects()) {
             if ("plane".equals(obj.getType())) {
                 groundWidth = obj.getSizeX();
                 groundHeight = obj.getSizeZ();
                 groundX = obj.getPosX();
                 groundZ = obj.getPosZ();
-                try { 
-                    groundColor = Color.web(obj.getColor()); 
-                } catch(Exception ignored){}
+                try {
+                    groundColor = Color.web(obj.getColor());
+                } catch (IllegalArgumentException ignored) {
+                    groundColor = Color.rgb(34, 139, 34);
+                }
                 break;
             }
         }
@@ -151,14 +186,13 @@ public class MiniMapView extends StackPane {
         gc.save();
         // Move rendering origin to the center of the canvas
         gc.translate(MAP_SIZE / 2.0, MAP_SIZE / 2.0);
-        
+
         // Rotate so that the drone's heading points UP (-Y on canvas). Minus fixes inversion.
         gc.rotate(-model.getYaw());
 
         // Scale to match viewRadius, flip Y axis so World +Z goes UP in the Canvas
         double scale = MAP_SIZE / (viewRadius * 2);
         gc.scale(scale, -scale);
-        
         // Translate the world relative to the drone
         gc.translate(-model.getX(), -model.getZ());
 
@@ -178,30 +212,71 @@ public class MiniMapView extends StackPane {
             }
         }
 
-        // 3. Draw Drone Trail (Rastro)
-        if (trail != null && trail.size() > 1) {
-            gc.setStroke(Color.rgb(255, 255, 255, 0.4));
-            gc.setLineWidth(2.0 / scale);
-            gc.beginPath();
-            boolean first = true;
-            for (double[] point : trail) {
-                if (first) {
-                    gc.moveTo(point[0], point[1]);
-                    first = false;
-                } else {
-                    gc.lineTo(point[0], point[1]);
-                }
-            }
-            gc.stroke();
-        }
+        // 3. Draw Drone Trail
+        drawTrail(gc, scale);
 
         // 4. Draw World Obstacles
+        drawWorldObjects(gc, config);
+
+        // 5. Draw Go To Target (Autopilot)
+        drawTarget(gc, scale);
+
+        gc.restore();
+        drawDroneIcon(gc);
+        drawCompass(gc, model);
+    }
+
+    private void updateTrail(DroneModel model) {
+        double cx = model.getX();
+        double cz = model.getZ();
+
+        if (!trailInitialized) {
+            trailPoints.add(new double[]{cx, cz});
+            lastTrailX = cx;
+            lastTrailZ = cz;
+            trailInitialized = true;
+            return;
+        }
+
+        double dx = cx - lastTrailX;
+        double dz = cz - lastTrailZ;
+        if (dx * dx + dz * dz >= TRAIL_MIN_DISTANCE * TRAIL_MIN_DISTANCE) {
+            if (trailPoints.size() >= MAX_TRAIL_POINTS) {
+                trailPoints.remove(0);
+            }
+            trailPoints.add(new double[]{cx, cz});
+            lastTrailX = cx;
+            lastTrailZ = cz;
+        }
+    }
+
+    private void drawTrail(GraphicsContext gc, double scale) {
+        if (trailPoints.size() <= 1) {
+            return;
+        }
+
+        gc.setStroke(Color.rgb(255, 255, 255, 0.4));
+        gc.setLineWidth(2.0 / scale);
+        gc.beginPath();
+        boolean first = true;
+        for (double[] point : trailPoints) {
+            if (first) {
+                gc.moveTo(point[0], point[1]);
+                first = false;
+            } else {
+                gc.lineTo(point[0], point[1]);
+            }
+        }
+        gc.stroke();
+    }
+
+    private void drawWorldObjects(GraphicsContext gc, WorldConfiguration config) {
         for (WorldObject obj : config.getObjects()) {
             if ("plane".equals(obj.getType())) continue;
-            
+
             try {
                 gc.setFill(Color.web(obj.getColor()));
-            } catch (Exception e) {
+            } catch (IllegalArgumentException e) {
                 gc.setFill(Color.GRAY);
             }
 
@@ -214,30 +289,35 @@ public class MiniMapView extends StackPane {
                 gc.fillRect(obj.getPosX() - w/2, obj.getPosZ() - d/2, w, d);
             }
         }
+    }
 
-        // 5. Draw Go To Target (Autopilot)
-        if (targetPos != null) {
-            gc.setStroke(Color.RED);
-            gc.setLineWidth(3.0 / scale);
-            double tx = targetPos[0];
-            double tz = targetPos[1];
-            double crossSize = 5.0;
-            gc.strokeLine(tx - crossSize, tz - crossSize, tx + crossSize, tz + crossSize);
-            gc.strokeLine(tx - crossSize, tz + crossSize, tx + crossSize, tz - crossSize);
+    private void drawTarget(GraphicsContext gc, double scale) {
+        if (targetPos == null) {
+            return;
         }
 
-        gc.restore();
+        gc.setStroke(Color.RED);
+        gc.setLineWidth(3.0 / scale);
+        double tx = targetPos[0];
+        double tz = targetPos[1];
+        double crossSize = 5.0;
+        gc.strokeLine(tx - crossSize, tz - crossSize, tx + crossSize, tz + crossSize);
+        gc.strokeLine(tx - crossSize, tz + crossSize, tx + crossSize, tz - crossSize);
+    }
 
+    private void drawDroneIcon(GraphicsContext gc) {
         // 6. Draw the Drone Icon (Always fixed at the center, pointing UP)
         gc.setFill(Color.WHITE);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1.5);
-        
+
         double[] xPoints = { MAP_SIZE/2, MAP_SIZE/2 - 7, MAP_SIZE/2 + 7 };
         double[] yPoints = { MAP_SIZE/2 - 10, MAP_SIZE/2 + 7, MAP_SIZE/2 + 7 };
         gc.fillPolygon(xPoints, yPoints, 3);
         gc.strokePolygon(xPoints, yPoints, 3);
-        
+    }
+
+    private void drawCompass(GraphicsContext gc, DroneModel model) {
         // 7. Draw the Cardinal Points (N, S, E, W) rotating dynamically
         gc.save();
         gc.translate(MAP_SIZE / 2.0, MAP_SIZE / 2.0);
@@ -246,7 +326,7 @@ public class MiniMapView extends StackPane {
         gc.setFont(Font.font("System", FontWeight.BOLD, 12));
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setTextBaseline(VPos.CENTER);
-        
+
         double compassR = MAP_SIZE / 2.0 - 12;
         gc.fillText("N", 0, -compassR);
         gc.fillText("S", 0, compassR);

@@ -61,6 +61,12 @@ public class ProximityWarningOverlay extends StackPane {
         
         getChildren().addAll(radarGroup, vLine, hLine);
     }
+
+    public void clear() {
+        for (Arc arc : arcs) {
+            arc.setOpacity(0);
+        }
+    }
     
     public void update(DroneModel drone, WorldConfiguration worldConfig) {
         long now = System.currentTimeMillis();

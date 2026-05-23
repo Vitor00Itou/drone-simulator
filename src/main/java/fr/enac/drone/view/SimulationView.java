@@ -1,5 +1,6 @@
 package fr.enac.drone.view;
 
+import fr.enac.drone.model.SimulationState;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.world.WorldConfiguration;
 import fr.enac.drone.model.world.WorldObject;
@@ -46,6 +47,8 @@ public class SimulationView {
     private final WorldConfiguration worldConfig;
 
     private final SceneMaterialFactory materialFactory;
+
+    private SimulationState simulationState = SimulationState.READY;
 
     public SimulationView(
             DroneModel model,
@@ -249,6 +252,15 @@ public class SimulationView {
         return root;
     }
 
+    public void setSimulationState(SimulationState simulationState) {
+        this.simulationState =
+                Objects.requireNonNull(
+                        simulationState,
+                        "Simulation state cannot be null"
+                );
+        hudView.updateSimulationState(simulationState);
+    }
+
     /**
      * Synchronizes visuals and camera with the model state.
      */
@@ -270,7 +282,7 @@ public class SimulationView {
 
         camera.setRotate(model.getYaw());
 
-        hudView.update(model, worldConfig);
+        hudView.update(model, worldConfig, simulationState);
     }
 
     /**

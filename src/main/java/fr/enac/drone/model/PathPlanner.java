@@ -101,7 +101,7 @@ public class PathPlanner {
         Node target = new Node(ti, tj);
 
         Map<Node, Double> gScores = new HashMap<>();
-        Map<Node, Double> fScores = new HashMap<>();   // déclaré avant la queue
+        Map<Node, Double> fScores = new HashMap<>();   // Declared before the queue.
         Map<Node, Node> cameFrom = new HashMap<>();
 
         PriorityQueue<Node> open = new PriorityQueue<>(

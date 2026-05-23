@@ -31,14 +31,17 @@ public class CommandHelpPanel extends VBox {
         setEffect(new DropShadow(12, Color.rgb(0, 0, 0, 0.28)));
 
         getChildren().addAll(
-                createCommandRow("O",           "Takeoff"),
-                createCommandRow("L",           "Land"),
-                createCommandRow("F",           "Disarm / Force Land"),
-                createCommandRow("W / S",       "Altitude"),
-                createCommandRow("A / D",       "Heading"),
-                createCommandRow("Up / Down",   "Forward / Backward"),
-                createCommandRow("Left / Right","Lateral Movement"),
-                createCommandRow("H",           "Return to Home (Auto-land)")
+                createCommandRow("Space / Enter", "Start / Pause / Resume"),
+                createCommandRow("R",             "Reset simulation"),
+                createCommandRow("Esc",           "Close"),
+                createCommandRow("O",             "Takeoff"),
+                createCommandRow("L",             "Land"),
+                createCommandRow("F",             "Emergency Stop"),
+                createCommandRow("W / S",         "Altitude"),
+                createCommandRow("A / D",         "Heading"),
+                createCommandRow("Up / Down",     "Forward / Backward"),
+                createCommandRow("Left / Right",  "Lateral Movement"),
+                createCommandRow("H",             "Return to Home")
         );
     }
 

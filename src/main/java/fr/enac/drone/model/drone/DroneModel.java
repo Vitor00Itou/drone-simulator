@@ -518,6 +518,9 @@ public class DroneModel {
         // Reset autopilot state
         this.state = FlightState.DISARMED;
         this.stateTimer = 0.0;
+        this.targetTakeoffY = y;
+        this.rthSafeY = y;
+        this.rthPhase = ReturnToHomePhase.ASCENDING;
         clearTargetYaw();
     }
 

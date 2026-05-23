@@ -21,35 +21,35 @@ public class BatteryIndicator extends VBox {
         title.setTextFill(Color.WHITE);
         title.setAlignment(Pos.CENTER);
 
-        // Fond fixe (70x12)
+        // Fixed background (70x12).
         batteryBg = new Rectangle(70, 12);
         batteryBg.setArcWidth(6);
         batteryBg.setArcHeight(6);
         batteryBg.setFill(Color.web("#333333"));
 
-        // Barre colorée – sa largeur variera, elle est ancrée à gauche (x=0)
+        // Colored bar anchored on the left; its width changes with the battery level.
         batteryBar = new Rectangle(70, 12);
         batteryBar.setArcWidth(6);
         batteryBar.setArcHeight(6);
         batteryBar.setFill(Color.LIME);
 
-        // Panneau pour positionner la barre par-dessus le fond
+        // Pane used to position the bar over the background.
         Pane barPane = new Pane();
         barPane.getChildren().addAll(batteryBg, batteryBar);
-        // On place la barre en haut à gauche du Pane
+        // Place the bar in the top-left corner of the pane.
         batteryBar.setX(0);
         batteryBar.setY(0);
-        // Le fond occupe tout le Pane
+        // The background fills the pane.
         batteryBg.setX(0);
         batteryBg.setY(0);
 
-        // Pourcentage centré (par-dessus le tout)
+        // Centered percentage over the bar.
         percentLabel = new Label("100%");
         percentLabel.setFont(Font.font("Monospaced", FontWeight.BOLD, 9));
         percentLabel.setTextFill(Color.WHITE);
         percentLabel.setAlignment(Pos.CENTER);
 
-        // StackPane pour superposer le panneau des barres et le texte centré
+        // StackPane overlays the bar pane and centered text.
         StackPane stack = new StackPane(barPane, percentLabel);
         stack.setAlignment(Pos.CENTER);
 

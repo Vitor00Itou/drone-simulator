@@ -1,43 +1,46 @@
 package fr.enac.drone.view;
 
+import fr.enac.drone.model.SimulationState;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.drone.DroneTelemetry;
 import fr.enac.drone.model.world.WorldConfiguration;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * Head-up display (HUD) overlay for the drone simulation.
- * Combines telemetry panel, command help panel, and minimap.
+ * Combines telemetry panel, command help panel, state indicator, proximity overlay, and minimap.
  */
 public class FpvHudView extends StackPane {
-    
+
     private final TelemetryPanel telemetryPanel;
     private final MiniMapView miniMapView;
     private final ProximityWarningOverlay proximityOverlay;
-    
-    // Flight trail history (X, Z coordinates)
-    private final List<double[]> trail = new ArrayList<>();
+    private final Label simulationStateLabel;
 
     public FpvHudView() {
         telemetryPanel = new TelemetryPanel();
         CommandHelpPanel commandHelpPanel = new CommandHelpPanel();
         miniMapView = new MiniMapView();
         proximityOverlay = new ProximityWarningOverlay();
+        simulationStateLabel = createSimulationStateLabel();
 
         // Make panels transparent to mouse clicks so clicks pass through to the minimap
         telemetryPanel.setMouseTransparent(true);
         commandHelpPanel.setMouseTransparent(true);
         proximityOverlay.setMouseTransparent(true);
+        simulationStateLabel.setMouseTransparent(true);
 
         setPickOnBounds(false);
 
@@ -45,14 +48,18 @@ public class FpvHudView extends StackPane {
         borderPane.setPickOnBounds(false);
 
         // Top: telemetry panel
-        borderPane.setTop(telemetryPanel);
-        BorderPane.setAlignment(telemetryPanel, Pos.TOP_CENTER);
-        BorderPane.setMargin(telemetryPanel, new Insets(24, 0, 0, 0));
+        StackPane topOverlay = new StackPane(telemetryPanel, simulationStateLabel);
+        topOverlay.setPickOnBounds(false);
+        topOverlay.setMouseTransparent(true);
+        topOverlay.setPadding(new Insets(24, 24, 0, 24));
+        StackPane.setAlignment(telemetryPanel, Pos.TOP_CENTER);
+        StackPane.setAlignment(simulationStateLabel, Pos.TOP_LEFT);
+        borderPane.setTop(topOverlay);
 
-        // Bottom: command help panel on the left, minimap on the right
         Region bottomSpacer = new Region();
         HBox.setHgrow(bottomSpacer, Priority.ALWAYS);
 
+        // Bottom: command help panel on the left, minimap on the right
         HBox bottomOverlay = new HBox(18, commandHelpPanel, bottomSpacer, miniMapView);
         bottomOverlay.setAlignment(Pos.BOTTOM_CENTER);
         bottomOverlay.setPadding(new Insets(0, 24, 24, 24));
@@ -60,6 +67,17 @@ public class FpvHudView extends StackPane {
         borderPane.setBottom(bottomOverlay);
 
         getChildren().addAll(proximityOverlay, borderPane);
+
+        updateSimulationState(SimulationState.READY);
+    }
+
+    private Label createSimulationStateLabel() {
+        Label label = new Label();
+        label.setFont(Font.font("System", FontWeight.BOLD, 12));
+        label.setPadding(new Insets(7, 10, 7, 10));
+        label.setMinHeight(28);
+        label.setMinWidth(Region.USE_PREF_SIZE);
+        return label;
     }
 
     /**
@@ -68,16 +86,41 @@ public class FpvHudView extends StackPane {
      * @param model       the drone model containing current state
      * @param worldConfig the world configuration (obstacles, ground, etc.)
      */
-    public void update(DroneModel model, WorldConfiguration worldConfig) {
+    public void update(
+            DroneModel model,
+            WorldConfiguration worldConfig,
+            SimulationState simulationState
+    ) {
         DroneTelemetry telemetry = model.getTelemetry();
         telemetryPanel.update(telemetry);
-        miniMapView.render(model, worldConfig, trail);
-        proximityOverlay.update(model, worldConfig);
+        updateSimulationState(simulationState);
+        miniMapView.render(model, worldConfig, simulationState);
 
-        // Record current position for flight trail
-        double x = model.getX();
-        double z = model.getZ();
-        trail.add(new double[]{x, z});
+        if (simulationState == SimulationState.RUNNING) {
+            proximityOverlay.update(model, worldConfig);
+        } else {
+            proximityOverlay.clear();
+        }
+    }
+
+    public void updateSimulationState(SimulationState simulationState) {
+        simulationStateLabel.setText("Simulation: " + simulationState.name());
+        simulationStateLabel.setStyle(getSimulationStateStyle(simulationState));
+    }
+
+    private String getSimulationStateStyle(SimulationState simulationState) {
+        String accentColor = switch (simulationState) {
+            case READY -> "#b8c7d9";
+            case RUNNING -> "#86d99a";
+            case PAUSED -> "#ffd166";
+        };
+
+        return "-fx-background-color: rgba(29, 26, 48, 0.88);"
+                + "-fx-background-radius: 5;"
+                + "-fx-border-radius: 5;"
+                + "-fx-border-color: " + accentColor + ";"
+                + "-fx-border-width: 1;"
+                + "-fx-text-fill: " + accentColor + ";";
     }
 
     /**
@@ -95,7 +138,7 @@ public class FpvHudView extends StackPane {
     public void clearMinimapTarget() {
         miniMapView.clearTarget();
     }
-    
+
     /**
      * Adjusts the minimap zoom level dynamically.
      *
@@ -104,11 +147,11 @@ public class FpvHudView extends StackPane {
     public void adjustMinimapZoom(double delta) {
         miniMapView.adjustZoom(delta);
     }
-    
+
     public double getMinimapZoom() {
         return miniMapView.getZoom();
     }
-    
+
     public void setMinimapZoom(double zoom) {
         miniMapView.setZoom(zoom);
     }
@@ -120,13 +163,14 @@ public class FpvHudView extends StackPane {
      * @return list of trail points
      */
     public List<double[]> getTrail() {
-        return trail;
+        return miniMapView.getTrail();
     }
 
     /**
      * Clears the flight trail history.
      */
     public void clearTrail() {
-        trail.clear();
+        miniMapView.clearTrail();
+        proximityOverlay.clear();
     }
 }

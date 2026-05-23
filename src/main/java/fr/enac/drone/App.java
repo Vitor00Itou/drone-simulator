@@ -3,6 +3,7 @@ package fr.enac.drone;
 import fr.enac.drone.controller.Autopilot;
 import fr.enac.drone.controller.DroneController;
 import fr.enac.drone.model.PathPlanner;
+import fr.enac.drone.model.SimulationState;
 import fr.enac.drone.model.drone.DroneControlSettings;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.drone.DroneSpawn;
@@ -13,8 +14,10 @@ import fr.enac.drone.view.SettingsView;
 import fr.enac.drone.view.SimulationView;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
@@ -34,6 +37,7 @@ public class App extends Application {
 
     private WorldConfiguration worldConfig;
     private AnimationTimer gameLoop;
+    private SimulationState simulationState = SimulationState.READY;
 
     private double droneYawSensitivity =
             DroneControlSettings.YAW_SENSITIVITY.getDefaultValue();
@@ -60,6 +64,7 @@ public class App extends Application {
         primaryStage.setTitle("FPV Drone Simulator");
         primaryStage.setScene(scene);
         primaryStage.setMaximized(true);
+        primaryStage.setOnCloseRequest(event -> stopGameLoop());
         primaryStage.show();
 
         initializeSimulation();
@@ -85,6 +90,7 @@ public class App extends Application {
     private void initializeSimulation() {
 
         stopGameLoop();
+        simulationState = SimulationState.READY;
         createMvcComponents();
         setupEventHandlers();
 
@@ -93,6 +99,11 @@ public class App extends Application {
         controller.setOnAutopilotFinished(() -> view.clearMinimapTarget());
 
         view.setMinimapTargetHandler(worldPos -> {
+            if (simulationState != SimulationState.RUNNING) {
+                view.clearMinimapTarget();
+                return;
+            }
+
             double startX = model.getX();
             double startZ = model.getZ();
 
@@ -103,11 +114,11 @@ public class App extends Application {
                 controller.setAutopilot(new Autopilot(waypoints));
             } else {
                 view.clearMinimapTarget();
-                System.out.println("Aucun chemin trouvé vers la cible.");
+                System.out.println("No path found to the target.");
             }
         });
 
-        // Return to Home action (touche H)
+        // Return to Home action (H key)
         controller.setReturnHomeAction(() -> {
             // Set the baseline to the drone's spawn altitude instead of a hardcoded Y=0
             double highestPointY = worldConfig.getDroneSpawn().getPosY();
@@ -127,6 +138,14 @@ public class App extends Application {
 
     private void stopGameLoop() {
         if (gameLoop != null) gameLoop.stop();
+        stopController();
+    }
+
+    private void stopController() {
+        if (controller != null) {
+            controller.stop();
+            controller = null;
+        }
     }
 
     private void createMvcComponents() {
@@ -138,15 +157,6 @@ public class App extends Application {
         model.setMaxHorizontalSpeed(droneMaxHorizontalSpeed);
         model.setMaxVerticalSpeed(droneMaxVerticalSpeed);
 
-        controller = new DroneController(model, collisionDetector);
-        view = new SimulationView(
-                model,
-                worldConfig,
-                currentWorldFilename,
-                this::handleWorldLoaded,
-                settingsState
-        );
-
         DroneSpawn spawn = worldConfig.getDroneSpawn();
 
         model.setSpawnPosition(
@@ -155,8 +165,17 @@ public class App extends Application {
                 spawn.getPosZ(),
                 spawn.getYaw()
         );
-        
-        view.clearTrail(); // Clears the initial (0,0) point recorded by the constructor
+
+        controller = new DroneController(model, collisionDetector);
+        view = new SimulationView(
+                model,
+                worldConfig,
+                currentWorldFilename,
+                this::handleWorldLoaded,
+                settingsState
+        );
+        view.setSimulationState(simulationState);
+        view.clearTrail();
         view.setMinimapZoom(minimapZoom);
 
         root.setCenter(view.getRoot());
@@ -175,16 +194,110 @@ public class App extends Application {
 
         settingsDismissFilter = event -> {
             if (view != null && view.isSettingsDrawerOpen()) {
-                view.closeSettingsDrawer();
-                controller.clearKeys();
-                view.getRoot().requestFocus();
+                if (event.getEventType() == KeyEvent.KEY_PRESSED) {
+                    view.closeSettingsDrawer();
+                    if (controller != null) {
+                        controller.clearKeys();
+                    }
+                    view.getRoot().requestFocus();
+                }
                 event.consume();
             }
         };
 
         scene.addEventFilter(KeyEvent.ANY, settingsDismissFilter);
-        scene.setOnKeyPressed(e -> controller.addKey(e.getCode()));
-        scene.setOnKeyReleased(e -> controller.removeKey(e.getCode()));
+        scene.setOnKeyPressed(this::handleKeyPressed);
+        scene.setOnKeyReleased(e -> {
+            if (controller != null) {
+                controller.removeKey(e.getCode());
+            }
+        });
+    }
+
+    private void handleKeyPressed(KeyEvent event) {
+        KeyCode code = event.getCode();
+
+        if (code == KeyCode.ESCAPE) {
+            closeApplication();
+            event.consume();
+            return;
+        }
+
+        if (code == KeyCode.SPACE || code == KeyCode.ENTER) {
+            toggleStartPauseResume();
+            event.consume();
+            return;
+        }
+
+        if (code == KeyCode.R) {
+            resetSimulationSession();
+            event.consume();
+            return;
+        }
+
+        if (simulationState == SimulationState.READY
+                && DroneController.isFlightStartKey(code)) {
+            setSimulationState(SimulationState.RUNNING);
+            controller.addKey(code);
+            event.consume();
+            return;
+        }
+
+        if (simulationState == SimulationState.RUNNING) {
+            controller.addKey(code);
+            event.consume();
+        }
+    }
+
+    private void toggleStartPauseResume() {
+        switch (simulationState) {
+            case READY -> setSimulationState(SimulationState.RUNNING);
+            case RUNNING -> pauseSimulationSession();
+            case PAUSED -> setSimulationState(SimulationState.RUNNING);
+        }
+    }
+
+    private void pauseSimulationSession() {
+        controller.clearKeys();
+        setSimulationState(SimulationState.PAUSED);
+    }
+
+    private void resetSimulationSession() {
+        controller.clearKeys();
+        controller.setAutopilot(null);
+        view.clearMinimapTarget();
+        view.clearTrail();
+        resetDroneToWorldSpawn();
+        setSimulationState(SimulationState.READY);
+    }
+
+    private void resetDroneToWorldSpawn() {
+        DroneSpawn spawn = worldConfig.getDroneSpawn();
+
+        model.setSpawnPosition(
+                spawn.getPosX(),
+                spawn.getPosY(),
+                spawn.getPosZ(),
+                spawn.getYaw()
+        );
+    }
+
+    private void setSimulationState(SimulationState simulationState) {
+        this.simulationState =
+                Objects.requireNonNull(
+                        simulationState,
+                        "Simulation state cannot be null"
+                );
+
+        if (view != null) {
+            view.setSimulationState(simulationState);
+            view.render();
+        }
+    }
+
+    private void closeApplication() {
+        stopGameLoop();
+        Platform.exit();
     }
 
     private void startGameLoop() {
@@ -204,13 +317,26 @@ public class App extends Application {
                 double deltaTime = (now - lastUpdate) / 1_000_000_000.0;
                 lastUpdate = now;
 
-                controller.update(deltaTime);
-                
+                if (controller == null) {
+                    return;
+                }
+
+                controller.updateInputDevices();
+
                 double zoomInput = controller.getZoomInput();
                 if (zoomInput != 0.0) {
                     view.adjustMinimapZoom(zoomInput * 2000.0 * deltaTime);
                 }
-                
+
+                if (simulationState == SimulationState.READY
+                        && controller.hasJoystickFlightStartInput()) {
+                    setSimulationState(SimulationState.RUNNING);
+                }
+
+                if (simulationState == SimulationState.RUNNING) {
+                    controller.update(deltaTime);
+                }
+
                 view.render();
             }
         };
@@ -225,6 +351,7 @@ public class App extends Application {
         this.worldConfig = Objects.requireNonNull(config);
         this.currentWorldFilename = Objects.requireNonNull(filename);
         settingsState.setSelectedWorldFilename(filename);
+        simulationState = SimulationState.READY;
 
         initializeSimulation();
     }
@@ -241,6 +368,11 @@ public class App extends Application {
         if (view != null) {
             minimapZoom = view.getMinimapZoom();
         }
+    }
+
+    @Override
+    public void stop() {
+        stopGameLoop();
     }
 
     public static void main(String[] args) {

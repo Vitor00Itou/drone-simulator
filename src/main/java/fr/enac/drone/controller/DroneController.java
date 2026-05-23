@@ -19,14 +19,25 @@ import fr.enac.drone.model.world.WorldCollisionDetector;
  */
 public class DroneController {
 
+    private static final Set<KeyCode> PILOTING_KEYS = Set.of(
+            KeyCode.W,
+            KeyCode.S,
+            KeyCode.A,
+            KeyCode.D,
+            KeyCode.UP,
+            KeyCode.DOWN,
+            KeyCode.LEFT,
+            KeyCode.RIGHT
+    );
+
     private final DroneModel model;
     private final WorldCollisionDetector collisionDetector;
     // Tracks currently pressed keys to allow simultaneous inputs
     private final Set<KeyCode> activeKeys = new HashSet<>();
+    private final JoystickService joystickService;
     private Autopilot autopilot;
     private Runnable onAutopilotFinished; // Callback to clear the target
     private Runnable returnHomeAction;    // Callback for returning home
-    private final JoystickService joystickService;
 
     public DroneController(DroneModel model, WorldCollisionDetector collisionDetector) {
         this.model = model;
@@ -35,9 +46,29 @@ public class DroneController {
         this.joystickService.start();
     }
 
+    public static boolean isPilotingKey(KeyCode code) {
+        return PILOTING_KEYS.contains(code);
+    }
+
+    public static boolean isFlightStartKey(KeyCode code) {
+        return isPilotingKey(code) || code == KeyCode.O;
+    }
+
+    public void updateInputDevices() {
+        joystickService.update();
+    }
+
+    public boolean hasJoystickFlightStartInput() {
+        return joystickService.isArmPressed()
+                || Math.abs(joystickService.getThrottle()) > 0
+                || Math.abs(joystickService.getYaw()) > 0
+                || Math.abs(joystickService.getPitch()) > 0
+                || Math.abs(joystickService.getRoll()) > 0;
+    }
+
     // Useful to gracefully shut down SDL when the window is closed
     public void stop() {
-        this.joystickService.stop();
+        joystickService.stop();
     }
 
     /** Adds a key to the active set when pressed, and handles one-shot actions. */
@@ -55,13 +86,6 @@ public class DroneController {
             // Motors cut: horizontal velocity zeroed, drone falls under gravity
             model.disarm();
             cancelAutopilot();
-        }
-    }
-
-    private void cancelAutopilot() {
-        if (autopilot != null) {
-            if (onAutopilotFinished != null) onAutopilotFinished.run();
-            setAutopilot(null);
         }
     }
 
@@ -86,6 +110,17 @@ public class DroneController {
 
     public void setReturnHomeAction(Runnable action) {
         this.returnHomeAction = action;
+    }
+
+    private void cancelAutopilot() {
+        if (autopilot == null) {
+            return;
+        }
+
+        if (onAutopilotFinished != null) {
+            onAutopilotFinished.run();
+        }
+        setAutopilot(null);
     }
 
     /**
@@ -122,15 +157,13 @@ public class DroneController {
     }
 
     /**
-     * Evaluates all currently active keys and updates the model.
-     * Designed to be called continuously inside a Game Loop (60 FPS).
+     * Evaluates active inputs and updates the model.
+     * Designed to be called continuously inside the simulation loop.
      * Movement is blocked when the drone is not armed.
      * Gravity-based falling (after disarm) is handled inside DroneModel.
      */
     public void update(double deltaTime) {
 
-        joystickService.update();
-        
         if (joystickService.isArmPressed()) {
             model.takeoff();
             cancelAutopilot();
@@ -140,9 +173,10 @@ public class DroneController {
             cancelAutopilot();
         }
 
-        if (returnHomeAction != null && (activeKeys.contains(KeyCode.H) || joystickService.isHomePressed())) {
+        if (returnHomeAction != null
+                && (activeKeys.contains(KeyCode.H) || joystickService.isHomePressed())) {
             returnHomeAction.run();
-            activeKeys.remove(KeyCode.H); 
+            activeKeys.remove(KeyCode.H);
             cancelAutopilot();
         }
 
@@ -152,10 +186,11 @@ public class DroneController {
 
         // ---- Autopilot Mode ----
         if (autopilot != null && autopilot.isActive()) {
-            boolean joystickMoved = Math.abs(joystickService.getPitch()) > 0.05 ||
-                                    Math.abs(joystickService.getRoll()) > 0.05 ||
-                                    Math.abs(joystickService.getYaw()) > 0.05 ||
-                                    Math.abs(joystickService.getThrottle()) > 0.05;
+            boolean joystickMoved =
+                    Math.abs(joystickService.getPitch()) > 0.05
+                            || Math.abs(joystickService.getRoll()) > 0.05
+                            || Math.abs(joystickService.getYaw()) > 0.05
+                            || Math.abs(joystickService.getThrottle()) > 0.05;
 
             if (!activeKeys.isEmpty() || joystickMoved) {
                 cancelAutopilot();
@@ -204,9 +239,9 @@ public class DroneController {
         rollInput += joystickService.getRoll();
 
         // Clamp inputs between -1 and 1 to prevent keyboard + joystick from doubling the speed
-        pitchInput = Math.max(-1, Math.min(1, pitchInput));
-        rollInput = Math.max(-1, Math.min(1, rollInput));
-        throttleInput = Math.max(-1, Math.min(1, throttleInput));
+        pitchInput = clampInput(pitchInput);
+        rollInput = clampInput(rollInput);
+        throttleInput = clampInput(throttleInput);
 
         // Update drone movement while preserving inertia and handling collisions
         updatePhysicsWithCollision(
@@ -216,7 +251,11 @@ public class DroneController {
             deltaTime
         );
     }
-    
+
+    private double clampInput(double value) {
+        return Math.max(-1, Math.min(1, value));
+    }
+
     public double getZoomInput() {
         return joystickService.getZoomInput();
     }
