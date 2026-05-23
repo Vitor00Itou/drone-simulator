@@ -34,7 +34,7 @@ public class SimulationView {
 
     private final DroneModel model;
 
-    private final Box droneVisual;
+    private final Cylinder droneVisual;
 
     private final PerspectiveCamera camera;
 
@@ -68,11 +68,7 @@ public class SimulationView {
         Group sceneRoot = new Group();
 
         // Drone visual
-        droneVisual = new Box(
-                model.getDroneWidth(),
-                model.getDroneHeight(),
-                model.getDroneDepth()
-        );
+        droneVisual = new Cylinder(model.getDroneRadius(), model.getDroneHeight());
 
         droneVisual.setRotationAxis(Rotate.Y_AXIS);
         droneVisual.setMaterial(materialFactory.createDroneMaterial());

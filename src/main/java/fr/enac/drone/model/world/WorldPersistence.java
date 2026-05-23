@@ -81,6 +81,9 @@ public class WorldPersistence {
         }
         
         WorldConfiguration config = objectMapper.readValue(file, WorldConfiguration.class);
+        
+        config.updateSpawnBase();
+        
         System.out.println("World configuration loaded from: " + filepath);
         return config;
     }

@@ -39,16 +39,23 @@ public class WorldCollisionDetector {
 
             WorldCollision verticalCollision =
                     checkVerticalCollision(drone, object);
+
+            if (verticalCollision == null) {
+                continue;
+            }
+
             WorldCollision horizontalCollision = null;
 
             if ("cylinder".equals(object.getType())) {
                 horizontalCollision =
                         checkCylinderCollision(drone, object);
-            }
-
-            if ("box".equals(object.getType())) {
+            } else if ("box".equals(object.getType())) {
                 horizontalCollision =
                         checkBoxCollision(drone, object);
+            }
+
+            if (horizontalCollision == null) {
+                continue;
             }
 
             WorldCollision collision =
@@ -158,12 +165,7 @@ public class WorldCollisionDetector {
             double dx = drone.getX() - object.getPosX();
             double dz = drone.getZ() - object.getPosZ();
 
-            double droneRadius =
-                    Math.max(
-                            drone.getDroneWidth(),
-                            drone.getDroneDepth()
-                    ) / 2.0;
-
+            double droneRadius = drone.getDroneRadius();
             double objectRadius = object.getSizeX();
 
             double maxDistance = droneRadius + objectRadius;
@@ -182,16 +184,15 @@ public class WorldCollisionDetector {
             DroneModel drone,
             WorldObject object
     ) {
-        double droneHalfWidth = drone.getDroneWidth() / 2.0;
-        double droneHalfDepth = drone.getDroneDepth() / 2.0;
+        double droneRadius = drone.getDroneRadius();
 
         double boxHalfWidth = object.getSizeX() / 2.0;
         double boxHalfDepth = object.getSizeZ() / 2.0;
 
-        return drone.getX() >= object.getPosX() - boxHalfWidth - droneHalfWidth
-                && drone.getX() <= object.getPosX() + boxHalfWidth + droneHalfWidth
-                && drone.getZ() >= object.getPosZ() - boxHalfDepth - droneHalfDepth
-                && drone.getZ() <= object.getPosZ() + boxHalfDepth + droneHalfDepth;
+        return drone.getX() >= object.getPosX() - boxHalfWidth - droneRadius
+                && drone.getX() <= object.getPosX() + boxHalfWidth + droneRadius
+                && drone.getZ() >= object.getPosZ() - boxHalfDepth - droneRadius
+                && drone.getZ() <= object.getPosZ() + boxHalfDepth + droneRadius;
     }
 
     /**
@@ -222,8 +223,7 @@ public class WorldCollisionDetector {
 
         double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
 
-        double droneRadius =
-                Math.max(drone.getDroneWidth(), drone.getDroneDepth()) / 2.0;
+        double droneRadius = drone.getDroneRadius();
 
         double cylinderRadius = object.getSizeX();
         double horizontalOverlap = droneRadius + cylinderRadius - horizontalDistance;
@@ -253,8 +253,7 @@ public class WorldCollisionDetector {
             DroneModel drone,
             WorldObject object
     ) {
-        double droneHalfWidth = drone.getDroneWidth() / 2.0;
-        double droneHalfDepth = drone.getDroneDepth() / 2.0;
+        double droneRadius = drone.getDroneRadius();
 
         double boxHalfWidth = object.getSizeX() / 2.0;
         double boxHalfDepth = object.getSizeZ() / 2.0;
@@ -262,8 +261,8 @@ public class WorldCollisionDetector {
         double dx = drone.getX() - object.getPosX();
         double dz = drone.getZ() - object.getPosZ();
 
-        double overlapX = droneHalfWidth + boxHalfWidth - Math.abs(dx);
-        double overlapZ = droneHalfDepth + boxHalfDepth - Math.abs(dz);
+        double overlapX = droneRadius + boxHalfWidth - Math.abs(dx);
+        double overlapZ = droneRadius + boxHalfDepth - Math.abs(dz);
 
         if (overlapX <= 0 || overlapZ <= 0) {
             return null;
