@@ -4,6 +4,7 @@ import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.world.WorldConfiguration;
 import fr.enac.drone.model.world.WorldObject;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.Group;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Arc;
@@ -29,7 +30,8 @@ public class ProximityWarningOverlay extends StackPane {
         // Simple, clean central crosshair to anchor the HUD
         Rectangle vLine = new Rectangle(2, 12, Color.rgb(255, 255, 255, 0.25));
         Rectangle hLine = new Rectangle(12, 2, Color.rgb(255, 255, 255, 0.25));
-        getChildren().addAll(vLine, hLine);
+        
+        Group radarGroup = new Group();
 
         // Sectors: 0=Front, 1=Front-Right, 2=Right, 3=Back-Right, 4=Back, 5=Back-Left, 6=Left, 7=Front-Left
         // Note: In JavaFX Arc, 0 degrees is at 3 o'clock (Right), and positive angle goes counter-clockwise.
@@ -37,8 +39,10 @@ public class ProximityWarningOverlay extends StackPane {
         
         for (int i = 0; i < 8; i++) {
             arcs[i] = new Arc();
-            arcs[i].setRadiusX(220); // Distance from center
-            arcs[i].setRadiusY(220);
+            arcs[i].setCenterX(0);
+            arcs[i].setCenterY(0);
+            arcs[i].setRadiusX(420); // Ellipse wider horizontally
+            arcs[i].setRadiusY(280); // Ellipse shorter vertically
             arcs[i].setStartAngle(centerAngles[i] - 18);
             arcs[i].setLength(36); // 36 degree length leaves a clean 9 degree gap between sectors
             arcs[i].setType(ArcType.OPEN);
@@ -52,8 +56,10 @@ public class ProximityWarningOverlay extends StackPane {
             glows[i].setSpread(0.4);
             arcs[i].setEffect(glows[i]);
             
-            getChildren().add(arcs[i]);
+            radarGroup.getChildren().add(arcs[i]);
         }
+        
+        getChildren().addAll(radarGroup, vLine, hLine);
     }
     
     public void update(DroneModel drone, WorldConfiguration worldConfig) {

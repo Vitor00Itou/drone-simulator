@@ -9,6 +9,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +19,7 @@ import java.util.function.Consumer;
  * Head-up display (HUD) overlay for the drone simulation.
  * Combines telemetry panel, command help panel, and minimap.
  */
-public class FpvHudView extends BorderPane {
+public class FpvHudView extends StackPane {
     
     private final TelemetryPanel telemetryPanel;
     private final MiniMapView miniMapView;
@@ -40,13 +41,13 @@ public class FpvHudView extends BorderPane {
 
         setPickOnBounds(false);
 
+        BorderPane borderPane = new BorderPane();
+        borderPane.setPickOnBounds(false);
+
         // Top: telemetry panel
-        setTop(telemetryPanel);
+        borderPane.setTop(telemetryPanel);
         BorderPane.setAlignment(telemetryPanel, Pos.TOP_CENTER);
         BorderPane.setMargin(telemetryPanel, new Insets(24, 0, 0, 0));
-        
-        // Center: Proximity Radar Overlay
-        setCenter(proximityOverlay);
 
         // Bottom: command help panel on the left, minimap on the right
         Region bottomSpacer = new Region();
@@ -56,7 +57,9 @@ public class FpvHudView extends BorderPane {
         bottomOverlay.setAlignment(Pos.BOTTOM_CENTER);
         bottomOverlay.setPadding(new Insets(0, 24, 24, 24));
 
-        setBottom(bottomOverlay);
+        borderPane.setBottom(bottomOverlay);
+
+        getChildren().addAll(proximityOverlay, borderPane);
     }
 
     /**
