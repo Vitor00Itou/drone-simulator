@@ -61,15 +61,48 @@ public class TelemetryPanel extends HBox {
         distanceItem.setValue(String.format(Locale.US, "%.1f m",          telemetry.distanceMeters()));
         batteryIndicator.update(telemetry.batteryPercent());
 
-        // Armed status pill
-        if (telemetry.armed()) {
-            armedLabel.setText("ARMED");
-            armedLabel.setBackground(new Background(new BackgroundFill(
-                    Color.rgb(0, 180, 0, 0.85), new CornerRadii(8), Insets.EMPTY)));
-        } else {
-            armedLabel.setText("DISARMED");
-            armedLabel.setBackground(new Background(new BackgroundFill(
-                    Color.rgb(200, 0, 0, 0.85), new CornerRadii(8), Insets.EMPTY)));
+        // Flight state status pill
+        switch (telemetry.flightState()) {
+
+            case DISARMED -> {
+                armedLabel.setText("DISARMED");
+                armedLabel.setBackground(new Background(new BackgroundFill(
+                        Color.rgb(180, 0, 0, 0.85), // dark red
+                        new CornerRadii(8),
+                        Insets.EMPTY)));
+            }
+
+            case TAKING_OFF -> {
+                armedLabel.setText("TAKING OFF");
+                armedLabel.setBackground(new Background(new BackgroundFill(
+                        Color.rgb(255, 170, 0, 0.85), // orange
+                        new CornerRadii(8),
+                        Insets.EMPTY)));
+            }
+
+            case FLYING -> {
+                armedLabel.setText("FLYING");
+                armedLabel.setBackground(new Background(new BackgroundFill(
+                        Color.rgb(0, 180, 0, 0.85), // green
+                        new CornerRadii(8),
+                        Insets.EMPTY)));
+            }
+
+            case LANDING -> {
+                armedLabel.setText("LANDING");
+                armedLabel.setBackground(new Background(new BackgroundFill(
+                        Color.rgb(0, 120, 255, 0.85), // blue
+                        new CornerRadii(8),
+                        Insets.EMPTY)));
+            }
+
+            case FALLING -> {
+                armedLabel.setText("FALLING");
+                armedLabel.setBackground(new Background(new BackgroundFill(
+                        Color.rgb(120, 0, 120, 0.9), // purple / emergency
+                        new CornerRadii(8),
+                        Insets.EMPTY)));
+            }
         }
     }
 }

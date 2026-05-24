@@ -10,5 +10,5 @@ public record DroneTelemetry(
     double headingDegrees,
     double distanceMeters,
     double batteryPercent,  // 0–100 %
-    boolean armed           // whether motors are ON
+    FlightState flightState // Current operational state of the drone
 ) {}

@@ -18,11 +18,8 @@ public class DroneModel {
     private static final double DRONE_HEIGHT = 0.10;
     private static final double DRONE_RADIUS = 0.60;
 
-    // Default center position when the drone rests on the default ground plane.
-    private static final double GROUND_Y = 0;
-
     private double x = 0;
-    private double y = GROUND_Y;
+    private double y = 0.0;
     private double z = 0;
 
     private double yaw = 0;
@@ -36,11 +33,11 @@ public class DroneModel {
     private double velocityY = 0.0;
     private double velocityZ = 0.0;
 
-    // Armed state
-    private boolean armed = false;
-
-    // Falling state
-    private boolean falling = false;
+    // Flight State
+    private FlightState state = FlightState.DISARMED;
+    private double stateTimer = 0.0;
+    private static final double TAKEOFF_ALTITUDE = 2.0;
+    private double targetTakeoffY = 0.0;
 
     // Collision response constants
     private static final double COLLISION_RESTITUTION = 0.35;
@@ -88,31 +85,61 @@ public class DroneModel {
 
     // ───────────────────────────────────────────────────────────────────
 
-    /**
-     * Arms the drone.
-     */
-    public void arm() {
-        armed = true;
-        falling = false;
+    public void takeoff() {
+        if (state == FlightState.DISARMED) {
+            state = FlightState.TAKING_OFF;
+            stateTimer = 0.0;
+            targetTakeoffY = this.y - (TAKEOFF_ALTITUDE / METERS_PER_UNIT);
+        } else if (state == FlightState.FALLING) {
+            state = FlightState.FLYING;
+            stateTimer = 0.0; // Trigger mid-air spool up timer
+        }
+    }
+
+    public void land() {
+        if (state == FlightState.FLYING || state == FlightState.TAKING_OFF) {
+            state = FlightState.LANDING;
+            stateTimer = 0.0;
+        }
     }
 
     /**
-     * Disarms the drone.
+     * Emergency stop: motors cut and drone falls immediately.
      */
     public void disarm() {
-        armed = false;
-        falling = true;
+        state = FlightState.FALLING;
+        stateTimer = 0.0;
         velocityX = 0;
         velocityZ = 0;
         yawVelocity = 0;
     }
+    
+    // Kept for backward compatibility with external calls if necessary
+    public void arm() {
+        takeoff();
+    }
 
     public boolean isArmed() {
-        return armed;
+        return state == FlightState.FLYING || state == FlightState.TAKING_OFF || state == FlightState.LANDING;
     }
 
     public boolean isFalling() {
-        return falling;
+        return state == FlightState.FALLING;
+    }
+
+    public FlightState getFlightState() {
+        return state;
+    }
+
+    private double getSpoolFactor() {
+        if (!isArmed()) return 0.0;
+        if (state == FlightState.TAKING_OFF) {
+            return Math.min(1.0, stateTimer / 1.0); // 1 sec spool up on ground
+        }
+        if (state == FlightState.FLYING && stateTimer < 0.4) {
+            return stateTimer / 0.4; // 400ms spool up for mid-air recovery
+        }
+        return 1.0;
     }
 
     // ───────────────────────────────────────────────────────────────────
@@ -124,15 +151,46 @@ public class DroneModel {
             double deltaTime
     ) {
         // Falling physics
-        if (falling) {
+        if (state == FlightState.FALLING) {
             velocityY += GRAVITY * deltaTime;
             this.y += velocityY * deltaTime;
             return;
         }
 
         // Block movement if disarmed
-        if (!armed) {
+        if (!isArmed()) {
             return;
+        }
+
+        stateTimer += deltaTime;
+        double spoolFactor = getSpoolFactor();
+
+        // Auto states override user input for controlled maneuvers
+        if (state == FlightState.TAKING_OFF) {
+            pitchInput = 0;
+            rollInput = 0;
+            
+            if (this.y <= targetTakeoffY) {
+                state = FlightState.FLYING;
+                stateTimer = 0.4; // Bypass mid-air spool up after a normal takeoff
+                throttleInput = 0; // Transition to hover
+            } else {
+                if (stateTimer < 1.0) {
+                    // Phase 1: Spool up delay (Wait 1 second before lifting)
+                    throttleInput = 0.0; 
+                } else {
+                    // Phase 2: Smoothly ramp up upward throttle to a max of 50% (-0.5)
+                    throttleInput = Math.max(-0.5, -(stateTimer - 1.0) * 0.5);
+                }
+            }
+        } else if (state == FlightState.LANDING) {
+            if (Math.abs(pitchInput) > 0.01 || Math.abs(rollInput) > 0.01 || Math.abs(throttleInput) > 0.01) {
+                state = FlightState.FLYING; // Cancel auto-landing on user input
+            } else {
+                pitchInput = 0;
+                rollInput = 0;
+                throttleInput = 0.4; // Descend slowly and smoothly
+            }
         }
 
         // Normalize input vector
@@ -165,10 +223,12 @@ public class DroneModel {
         double accelX =
                 (targetVelocityX - velocityX)
                         * ACCELERATION_HORIZONTAL
+                        * spoolFactor
                         * deltaTime;
         double accelZ =
                 (targetVelocityZ - velocityZ)
                         * ACCELERATION_HORIZONTAL
+                        * spoolFactor
                         * deltaTime;
 
         velocityX += accelX;
@@ -184,10 +244,11 @@ public class DroneModel {
         double accelY =
                 (targetVelocityY - velocityY)
                         * ACCELERATION_VERTICAL
+                        * spoolFactor
                         * deltaTime;
 
         velocityY += accelY;
-        velocityY += (HOVER_THRUST - GRAVITY) * deltaTime;
+        velocityY += (GRAVITY - HOVER_THRUST * spoolFactor) * deltaTime;
         velocityY *= Math.pow(DRAG_COEFFICIENT, deltaTime);
 
         // Apply movement
@@ -199,17 +260,12 @@ public class DroneModel {
         double altitudeMeters =
                 Math.max(
                         0.0,
-                        -(y - GROUND_Y) * METERS_PER_UNIT
+                        -y * METERS_PER_UNIT
                 );
-
-        boolean onGround =
-                (this.y >= GROUND_Y - 0.5);
 
         double drainRate;
 
-        if (onGround
-                && throttleInput <= 0
-                && inputLength == 0) {
+        if (state == FlightState.DISARMED || state == FlightState.FALLING) {
             drainRate = DRAIN_GROUND_IDLE;
         } else {
             drainRate = DRAIN_HOVER_BASE;
@@ -233,32 +289,36 @@ public class DroneModel {
     }
 
     public void yawLeft(double deltaTime) {
-        if (!armed) return;
+        if (!isArmed()) return;
+        if (state == FlightState.LANDING) state = FlightState.FLYING; // Cancel landing
 
         double targetYawVelocity = -getYawRateDegreesPerSecond();
         yawVelocity +=
                 (targetYawVelocity - yawVelocity)
                         * YAW_ACCELERATION
+                        * getSpoolFactor()
                         * deltaTime;
         yaw += yawVelocity * deltaTime;
     }
 
     public void yawRight(double deltaTime) {
-        if (!armed) return;
+        if (!isArmed()) return;
+        if (state == FlightState.LANDING) state = FlightState.FLYING; // Cancel landing
 
         double targetYawVelocity = getYawRateDegreesPerSecond();
         yawVelocity +=
                 (targetYawVelocity - yawVelocity)
                         * YAW_ACCELERATION
+                        * getSpoolFactor()
                         * deltaTime;
         yaw += yawVelocity * deltaTime;
     }
 
     public void updateYaw(double deltaTime) {
-        if (!armed) return;
+        if (!isArmed()) return;
 
         if (useTargetYaw) {
-            yawVelocity += (targetYawVelocity - yawVelocity) * YAW_ACCELERATION * deltaTime;
+            yawVelocity += (targetYawVelocity - yawVelocity) * YAW_ACCELERATION * getSpoolFactor() * deltaTime;
         } else {
             yawVelocity *= Math.pow(YAW_DRAG, deltaTime);
         }
@@ -351,6 +411,8 @@ public class DroneModel {
         remainingFlightTimeSeconds = MAX_FLIGHT_TIME_SECONDS;
 
         // Reset autopilot state
+        this.state = FlightState.DISARMED;
+        this.stateTimer = 0.0;
         clearTargetYaw();
     }
 
@@ -361,7 +423,7 @@ public class DroneModel {
         double altitudeMeters =
                 Math.max(
                         0.0,
-                        -(y - GROUND_Y) * METERS_PER_UNIT
+                        -y * METERS_PER_UNIT
                 );
         double headingDegrees = MathUtils.normalizeHeading(yaw);
         double distanceMeters =
@@ -381,7 +443,7 @@ public class DroneModel {
                 headingDegrees,
                 distanceMeters,
                 getBatteryPercentage(),
-                armed
+                state
         );
     }
     /**
@@ -448,7 +510,9 @@ public class DroneModel {
         // Stop downward inertia when landing on a surface
         if (collision.getNormalY() < 0 && velocityY > 0) {
                 velocityY = 0;
-                falling = false;
+                if (state == FlightState.FALLING || state == FlightState.LANDING) {
+                    state = FlightState.DISARMED;
+                }
         }
 
         // Stop upward inertia when hitting the bottom of an object

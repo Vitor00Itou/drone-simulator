@@ -12,8 +12,9 @@ import fr.enac.drone.model.world.WorldCollisionDetector;
  * for a smooth Mode 2 flight simulation.
  *
  * Shortcuts:
- *   O → Arm the drone (motors ON  – enables all movement)
- *   F → Disarm / cut motors       (drone falls under gravity to the ground)
+ *   O → Takeoff (Arms drone and ascends to hover altitude)
+ *   L → Land (Descends automatically and disarms on touch down)
+ *   F → Emergency Stop (Cuts motors, drone falls to the ground)
  *   H → Return to Home (follows trail in reverse)
  */
 public class DroneController {
@@ -45,7 +46,9 @@ public class DroneController {
 
         // One-shot actions (handled on key-down, not in the game loop)
         if (code == KeyCode.O) {
-            model.arm();
+            model.takeoff();
+        } else if (code == KeyCode.L) {
+            model.land();
         } else if (code == KeyCode.F) {
             // Motors cut: horizontal velocity zeroed, drone falls under gravity
             model.disarm();
@@ -116,7 +119,7 @@ public class DroneController {
         joystickService.update();
         
         if (joystickService.isArmPressed()) {
-            model.arm();
+            model.takeoff();
         }
         if (joystickService.isDisarmPressed()) {
             model.disarm();

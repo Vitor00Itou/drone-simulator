@@ -31,7 +31,8 @@ public class CommandHelpPanel extends VBox {
         setEffect(new DropShadow(12, Color.rgb(0, 0, 0, 0.28)));
 
         getChildren().addAll(
-                createCommandRow("O",           "Arm (motors ON)"),
+                createCommandRow("O",           "Takeoff"),
+                createCommandRow("L",           "Land"),
                 createCommandRow("F",           "Disarm / Force Land"),
                 createCommandRow("W / S",       "Altitude"),
                 createCommandRow("A / D",       "Heading"),
