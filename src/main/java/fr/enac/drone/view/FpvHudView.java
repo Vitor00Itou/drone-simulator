@@ -9,6 +9,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +19,11 @@ import java.util.function.Consumer;
  * Head-up display (HUD) overlay for the drone simulation.
  * Combines telemetry panel, command help panel, and minimap.
  */
-public class FpvHudView extends BorderPane {
+public class FpvHudView extends StackPane {
     
     private final TelemetryPanel telemetryPanel;
     private final MiniMapView miniMapView;
+    private final ProximityWarningOverlay proximityOverlay;
     
     // Flight trail history (X, Z coordinates)
     private final List<double[]> trail = new ArrayList<>();
@@ -30,15 +32,20 @@ public class FpvHudView extends BorderPane {
         telemetryPanel = new TelemetryPanel();
         CommandHelpPanel commandHelpPanel = new CommandHelpPanel();
         miniMapView = new MiniMapView();
+        proximityOverlay = new ProximityWarningOverlay();
 
         // Make panels transparent to mouse clicks so clicks pass through to the minimap
         telemetryPanel.setMouseTransparent(true);
         commandHelpPanel.setMouseTransparent(true);
+        proximityOverlay.setMouseTransparent(true);
 
         setPickOnBounds(false);
 
+        BorderPane borderPane = new BorderPane();
+        borderPane.setPickOnBounds(false);
+
         // Top: telemetry panel
-        setTop(telemetryPanel);
+        borderPane.setTop(telemetryPanel);
         BorderPane.setAlignment(telemetryPanel, Pos.TOP_CENTER);
         BorderPane.setMargin(telemetryPanel, new Insets(24, 0, 0, 0));
 
@@ -50,7 +57,9 @@ public class FpvHudView extends BorderPane {
         bottomOverlay.setAlignment(Pos.BOTTOM_CENTER);
         bottomOverlay.setPadding(new Insets(0, 24, 24, 24));
 
-        setBottom(bottomOverlay);
+        borderPane.setBottom(bottomOverlay);
+
+        getChildren().addAll(proximityOverlay, borderPane);
     }
 
     /**
@@ -63,6 +72,7 @@ public class FpvHudView extends BorderPane {
         DroneTelemetry telemetry = model.getTelemetry();
         telemetryPanel.update(telemetry);
         miniMapView.render(model, worldConfig);
+        proximityOverlay.update(model, worldConfig);
 
         // Record current position for flight trail
         double x = model.getX();
