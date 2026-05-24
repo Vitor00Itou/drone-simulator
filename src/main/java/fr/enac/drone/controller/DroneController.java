@@ -97,10 +97,14 @@ public class DroneController {
             double throttleInput,
             double deltaTime
     ) {
+        // Raycast-like check for the surface exactly below the drone
+        double groundYBelow = collisionDetector.getGroundHeightBelow(model);
+
         model.updatePhysics(
                 pitchInput,
                 rollInput,
                 throttleInput,
+                groundYBelow,
                 deltaTime
         );
 

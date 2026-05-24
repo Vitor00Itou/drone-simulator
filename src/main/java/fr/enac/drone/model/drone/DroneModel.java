@@ -12,6 +12,11 @@ import fr.enac.drone.utils.MathUtils;
  */
 public class DroneModel {
 
+    public enum ReturnToHomePhase {
+        ASCENDING,
+        CRUISING
+    }
+
     private static final double METERS_PER_UNIT = 1.0;
 
     // Drone physical dimensions used by rendering and collision detection
@@ -27,7 +32,6 @@ public class DroneModel {
 
     private double homeX = 0;
     private double homeZ = 0;
-    private double homeY = 0.0;
 
     // Velocity vectors (m/s)
     private double velocityX = 0.0;
@@ -40,7 +44,7 @@ public class DroneModel {
     private static final double TAKEOFF_ALTITUDE = 2.0;
     private double targetTakeoffY = 0.0;
     private double rthSafeY = 0.0;
-    private int rthPhase = 0;
+    private ReturnToHomePhase rthPhase = ReturnToHomePhase.ASCENDING;
 
     // Collision response constants
     private static final double COLLISION_RESTITUTION = 0.35;
@@ -104,7 +108,7 @@ public class DroneModel {
             state = FlightState.RETURNING_HOME;
             // Ensure we don't descend if we are already higher than the safe altitude
             this.rthSafeY = Math.min(safeY, this.y); 
-            this.rthPhase = 0;
+            this.rthPhase = ReturnToHomePhase.ASCENDING;
             this.stateTimer = 0.0;
             clearTargetYaw();
         }
@@ -162,6 +166,7 @@ public class DroneModel {
             double pitchInput,
             double rollInput,
             double throttleInput,
+            double groundYBelow,
             double deltaTime
     ) {
         // Falling physics
@@ -221,14 +226,14 @@ public class DroneModel {
                     clearTargetYaw();
                 }
 
-                if (rthPhase == 0) {
+                if (rthPhase == ReturnToHomePhase.ASCENDING) {
                     // Phase 0: Ascend directly upward to the safe Y coordinate
                     if (this.y > rthSafeY) {
                         throttleInput = -1.0; // Ascend full speed
                     } else {
-                        rthPhase = 1; // Start cruising
+                        rthPhase = ReturnToHomePhase.CRUISING; // Start cruising
                     }
-                } else if (rthPhase == 1) {
+                } else if (rthPhase == ReturnToHomePhase.CRUISING) {
                     // Phase 1: Maintain safe altitude while flying directly to (homeX, homeZ)
                     if (this.y > rthSafeY + 1.0) throttleInput = -0.5;
                     else if (this.y < rthSafeY - 1.0) throttleInput = 0.5;
@@ -264,11 +269,8 @@ public class DroneModel {
                 // Determine desired descent speed in m/s
                 double targetDescentSpeed;
                 
-                double distToHome = Math.sqrt((homeX - this.x) * (homeX - this.x) + (homeZ - this.z) * (homeZ - this.z));
-                
-                // Estimate ground level (use home base Y if close, otherwise default to 0.0)
-                double groundY = (distToHome < 5.0) ? homeY : 0.0;
-                double distToGround = groundY - this.y;
+                // The drone now acts like it has a downward-facing proximity sensor
+                double distToGround = groundYBelow - this.y;
                 
                 // Calculate a safe braking altitude to begin slowing down (min 15m, scales with speed)
                 double brakingDistance = Math.max(15.0, maxVerticalSpeed * 1.5);
@@ -503,7 +505,6 @@ public class DroneModel {
         this.yaw = yaw;
         this.homeX = x;
         this.homeZ = z;
-        this.homeY = y;
 
         // Reset velocities
         this.velocityX = 0;
