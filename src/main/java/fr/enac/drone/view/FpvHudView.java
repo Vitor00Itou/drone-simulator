@@ -22,6 +22,7 @@ public class FpvHudView extends BorderPane {
     
     private final TelemetryPanel telemetryPanel;
     private final MiniMapView miniMapView;
+    private final ProximityWarningOverlay proximityOverlay;
     
     // Flight trail history (X, Z coordinates)
     private final List<double[]> trail = new ArrayList<>();
@@ -30,10 +31,12 @@ public class FpvHudView extends BorderPane {
         telemetryPanel = new TelemetryPanel();
         CommandHelpPanel commandHelpPanel = new CommandHelpPanel();
         miniMapView = new MiniMapView();
+        proximityOverlay = new ProximityWarningOverlay();
 
         // Make panels transparent to mouse clicks so clicks pass through to the minimap
         telemetryPanel.setMouseTransparent(true);
         commandHelpPanel.setMouseTransparent(true);
+        proximityOverlay.setMouseTransparent(true);
 
         setPickOnBounds(false);
 
@@ -41,6 +44,9 @@ public class FpvHudView extends BorderPane {
         setTop(telemetryPanel);
         BorderPane.setAlignment(telemetryPanel, Pos.TOP_CENTER);
         BorderPane.setMargin(telemetryPanel, new Insets(24, 0, 0, 0));
+        
+        // Center: Proximity Radar Overlay
+        setCenter(proximityOverlay);
 
         // Bottom: command help panel on the left, minimap on the right
         Region bottomSpacer = new Region();
@@ -63,6 +69,7 @@ public class FpvHudView extends BorderPane {
         DroneTelemetry telemetry = model.getTelemetry();
         telemetryPanel.update(telemetry);
         miniMapView.render(model, worldConfig);
+        proximityOverlay.update(model, worldConfig);
 
         // Record current position for flight trail
         double x = model.getX();
