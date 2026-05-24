@@ -262,19 +262,25 @@ public class DroneModel {
                 velocityZ -= velocityZ * 4.0 * deltaTime;
 
                 // Determine desired descent speed in m/s
-                double targetDescentSpeed = 2.0; // Safe default
+                double targetDescentSpeed;
                 
                 double distToHome = Math.sqrt((homeX - this.x) * (homeX - this.x) + (homeZ - this.z) * (homeZ - this.z));
-                if (distToHome < 5.0) {
-                    double distToGround = homeY - this.y;
-                    if (distToGround > 8.0) {
-                        targetDescentSpeed = 4.0; // Fast descent when high up
-                    } else if (distToGround > 1.5) {
-                        // Smoothly interpolate from 4.0 to 0.5 based on distance
-                        targetDescentSpeed = 0.5 + (3.5 * ((distToGround - 1.5) / 6.5));
-                    } else {
-                        targetDescentSpeed = 0.5; // Very slow and gentle touchdown
-                    }
+                
+                // Estimate ground level (use home base Y if close, otherwise default to 0.0)
+                double groundY = (distToHome < 5.0) ? homeY : 0.0;
+                double distToGround = groundY - this.y;
+                
+                // Calculate a safe braking altitude to begin slowing down (min 15m, scales with speed)
+                double brakingDistance = Math.max(15.0, maxVerticalSpeed * 1.5);
+
+                if (distToGround > brakingDistance) {
+                    targetDescentSpeed = maxVerticalSpeed; // Fast plunge when high up!
+                } else if (distToGround > 1.5) {
+                    // Smoothly interpolate from max vertical speed to 0.5 based on remaining distance
+                    double fraction = (distToGround - 1.5) / (brakingDistance - 1.5);
+                    targetDescentSpeed = 0.5 + ((maxVerticalSpeed - 0.5) * fraction);
+                } else {
+                    targetDescentSpeed = 0.5; // Very slow and gentle touchdown
                 }
 
                 // Calculate the required throttle input to achieve the exact target descent speed
