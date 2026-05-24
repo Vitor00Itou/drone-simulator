@@ -71,7 +71,7 @@ public class FpvHudView extends StackPane {
     public void update(DroneModel model, WorldConfiguration worldConfig) {
         DroneTelemetry telemetry = model.getTelemetry();
         telemetryPanel.update(telemetry);
-        miniMapView.render(model, worldConfig);
+        miniMapView.render(model, worldConfig, trail);
         proximityOverlay.update(model, worldConfig);
 
         // Record current position for flight trail
@@ -99,6 +99,15 @@ public class FpvHudView extends StackPane {
      */
     public void clearMinimapTarget() {
         miniMapView.clearTarget();
+    }
+    
+    /**
+     * Adjusts the minimap zoom level dynamically.
+     *
+     * @param delta the amount of zoom to add/remove
+     */
+    public void adjustMinimapZoom(double delta) {
+        miniMapView.adjustZoom(delta);
     }
 
     /**

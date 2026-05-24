@@ -279,6 +279,10 @@ public class SimulationView {
     public void clearMinimapTarget() {
         hudView.clearMinimapTarget();
     }
+    
+    public void adjustMinimapZoom(double delta) {
+        hudView.adjustMinimapZoom(delta);
+    }
 
     /**
      * Returns a copy of the recorded flight trail points.

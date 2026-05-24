@@ -201,6 +201,12 @@ public class App extends Application {
                 lastUpdate = now;
 
                 controller.update(deltaTime);
+                
+                double zoomInput = controller.getZoomInput();
+                if (zoomInput != 0.0) {
+                    view.adjustMinimapZoom(zoomInput * 2000.0 * deltaTime);
+                }
+                
                 view.render();
             }
         };
