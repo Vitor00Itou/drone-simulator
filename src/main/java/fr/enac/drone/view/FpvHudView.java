@@ -71,18 +71,13 @@ public class FpvHudView extends StackPane {
     public void update(DroneModel model, WorldConfiguration worldConfig) {
         DroneTelemetry telemetry = model.getTelemetry();
         telemetryPanel.update(telemetry);
-        miniMapView.render(model, worldConfig);
+        miniMapView.render(model, worldConfig, trail);
         proximityOverlay.update(model, worldConfig);
 
         // Record current position for flight trail
         double x = model.getX();
         double z = model.getZ();
         trail.add(new double[]{x, z});
-        
-        // Limit trail size to prevent memory issues
-        if (trail.size() > 1000) {
-            trail.remove(0);
-        }
     }
 
     /**
@@ -100,6 +95,23 @@ public class FpvHudView extends StackPane {
     public void clearMinimapTarget() {
         miniMapView.clearTarget();
     }
+    
+    /**
+     * Adjusts the minimap zoom level dynamically.
+     *
+     * @param delta the amount of zoom to add/remove
+     */
+    public void adjustMinimapZoom(double delta) {
+        miniMapView.adjustZoom(delta);
+    }
+    
+    public double getMinimapZoom() {
+        return miniMapView.getZoom();
+    }
+    
+    public void setMinimapZoom(double zoom) {
+        miniMapView.setZoom(zoom);
+    }
 
     /**
      * Returns a copy of the recorded flight trail points.
@@ -109,5 +121,12 @@ public class FpvHudView extends StackPane {
      */
     public List<double[]> getTrail() {
         return trail;
+    }
+
+    /**
+     * Clears the flight trail history.
+     */
+    public void clearTrail() {
+        trail.clear();
     }
 }

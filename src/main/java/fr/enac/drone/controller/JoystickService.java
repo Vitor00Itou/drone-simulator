@@ -19,6 +19,7 @@ public class JoystickService {
     private boolean armPressed = false;
     private boolean disarmPressed = false;
     private boolean homePressed = false;
+    private double zoomInput = 0.0;
 
     public JoystickService() {
         controllers = new ControllerManager();
@@ -70,8 +71,16 @@ public class JoystickService {
             armPressed = state.a || state.start;
             disarmPressed = state.b || state.back;
             homePressed = state.guide;
+            
+            zoomInput = 0;
+            // Right side (RB/RT): Zoom In (Decrease Radius)
+            if (state.rb || state.rightTrigger > 0.1) zoomInput -= 1.0;
+            // Left side (LB/LT): Zoom Out (Increase Radius)
+            if (state.lb || state.leftTrigger > 0.1) zoomInput += 1.0;
+            // Clamp value
+            zoomInput = Math.max(-1.0, Math.min(1.0, zoomInput));
         } else {
-            throttle = yaw = pitch = roll = 0.0;
+            throttle = yaw = pitch = roll = zoomInput = 0.0;
             armPressed = disarmPressed = homePressed = false;
         }
     }
@@ -92,4 +101,5 @@ public class JoystickService {
     public boolean isArmPressed() { return armPressed; }
     public boolean isDisarmPressed() { return disarmPressed; }
     public boolean isHomePressed() { return homePressed; }
+    public double getZoomInput() { return zoomInput; }
 }

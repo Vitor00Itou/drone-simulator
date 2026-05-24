@@ -216,4 +216,8 @@ public class DroneController {
             deltaTime
         );
     }
+    
+    public double getZoomInput() {
+        return joystickService.getZoomInput();
+    }
 }

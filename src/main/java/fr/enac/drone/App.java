@@ -41,6 +41,7 @@ public class App extends Application {
             DroneControlSettings.MAX_HORIZONTAL_SPEED.getDefaultValue();
     private double droneMaxVerticalSpeed =
             DroneControlSettings.MAX_VERTICAL_SPEED.getDefaultValue();
+    private double minimapZoom = 1000.0;
     private final SettingsView.State settingsState = new SettingsView.State();
 
     private DroneModel model;
@@ -154,6 +155,9 @@ public class App extends Application {
                 spawn.getPosZ(),
                 spawn.getYaw()
         );
+        
+        view.clearTrail(); // Clears the initial (0,0) point recorded by the constructor
+        view.setMinimapZoom(minimapZoom);
 
         root.setCenter(view.getRoot());
     }
@@ -201,6 +205,12 @@ public class App extends Application {
                 lastUpdate = now;
 
                 controller.update(deltaTime);
+                
+                double zoomInput = controller.getZoomInput();
+                if (zoomInput != 0.0) {
+                    view.adjustMinimapZoom(zoomInput * 2000.0 * deltaTime);
+                }
+                
                 view.render();
             }
         };
@@ -227,6 +237,10 @@ public class App extends Application {
         droneYawSensitivity = model.getYawSensitivity();
         droneMaxHorizontalSpeed = model.getMaxHorizontalSpeed();
         droneMaxVerticalSpeed = model.getMaxVerticalSpeed();
+        
+        if (view != null) {
+            minimapZoom = view.getMinimapZoom();
+        }
     }
 
     public static void main(String[] args) {
