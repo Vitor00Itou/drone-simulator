@@ -88,6 +88,14 @@ public class TelemetryPanel extends HBox {
                         Insets.EMPTY)));
             }
 
+            case RETURNING_HOME -> {
+                armedLabel.setText("RTH (AUTO)");
+                armedLabel.setBackground(new Background(new BackgroundFill(
+                        Color.rgb(200, 100, 255, 0.85), // purple
+                        new CornerRadii(8),
+                        Insets.EMPTY)));
+            }
+
             case LANDING -> {
                 armedLabel.setText("LANDING");
                 armedLabel.setBackground(new Background(new BackgroundFill(

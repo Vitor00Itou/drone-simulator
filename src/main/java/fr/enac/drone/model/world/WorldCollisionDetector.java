@@ -16,6 +16,34 @@ public class WorldCollisionDetector {
     }
 
     /**
+     * Estimates the highest surface Y-coordinate directly below the drone.
+     * Useful for dynamic landing and ground-effect calculations (simulating a downward sensor).
+     */
+    public double getGroundHeightBelow(DroneModel drone) {
+        double droneY = drone.getY();
+        double highestGroundY = Double.MAX_VALUE;
+
+        for (WorldObject object : worldConfig.getObjects()) {
+            if ("plane".equals(object.getType())) {
+                double planeY = object.getPosY() - object.getSizeY() / 2.0;
+                if (planeY >= droneY && planeY < highestGroundY) {
+                    highestGroundY = planeY;
+                }
+                continue;
+            }
+
+            if (isHorizontallyOverObject(drone, object)) {
+                double topY = object.getPosY() - object.getSizeY() / 2.0;
+                if (topY >= droneY && topY < highestGroundY) {
+                    highestGroundY = topY;
+                }
+            }
+        }
+
+        return highestGroundY == Double.MAX_VALUE ? 0.0 : highestGroundY;
+    }
+
+    /**
      * Searches for the first collision between the drone and any solid object.
      */
     public WorldCollision findCollision(DroneModel drone) {
