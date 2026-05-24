@@ -64,6 +64,11 @@ public class MiniMapView extends StackPane {
         StackPane.setMargin(zoomSlider, new Insets(0, -25, 0, 0)); // Negative margin pushes it outside
         zoomSlider.valueProperty().addListener((obs, oldVal, newVal) -> viewRadius = newVal.doubleValue());
 
+        // Prevent the slider from stealing keyboard focus so flight controls remain active
+        zoomSlider.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (isFocused) canvas.requestFocus();
+        });
+
         // Mouse scroll for natural zooming
         setOnScroll(event -> {
             double zoomFactor = event.getDeltaY() > 0 ? -150 : 150;
@@ -89,20 +94,20 @@ public class MiniMapView extends StackPane {
         if (onTargetClicked == null) return;
         
         double dx = event.getX() - MAP_SIZE / 2.0;
-        double dz = event.getY() - MAP_SIZE / 2.0;
+        double dy = event.getY() - MAP_SIZE / 2.0;
 
-        // Invert the world rendering rotation
-        double invAngle = Math.toRadians(-(lastDroneYaw + 180));
-        double cosA = Math.cos(invAngle);
-        double sinA = Math.sin(invAngle);
+        // Compensate the rotation
+        double rad = Math.toRadians(lastDroneYaw);
+        double cosA = Math.cos(rad);
+        double sinA = Math.sin(rad);
 
-        double rotX = dx * cosA - dz * sinA;
-        double rotZ = dx * sinA + dz * cosA;
+        double rotX = dx * cosA - dy * sinA;
+        double rotY = dx * sinA + dy * cosA;
 
-        // Invert the scaling and apply drone offset to get real World Coordinates
+        // Invert the scaling (including the -Y flip for +Z) and apply drone offset
         double scale = MAP_SIZE / (viewRadius * 2);
         double worldX = lastDroneX + (rotX / scale);
-        double worldZ = lastDroneZ + (rotZ / scale);
+        double worldZ = lastDroneZ + (rotY / -scale);
 
         targetPos = new double[]{worldX, worldZ};
         onTargetClicked.accept(targetPos);
@@ -139,12 +144,12 @@ public class MiniMapView extends StackPane {
         // Move rendering origin to the center of the canvas
         gc.translate(MAP_SIZE / 2.0, MAP_SIZE / 2.0);
         
-        // Rotate so that the drone's heading points UP (-Y on canvas)
-        gc.rotate(model.getYaw() + 180);
+        // Rotate so that the drone's heading points UP (-Y on canvas). Minus fixes inversion.
+        gc.rotate(-model.getYaw());
 
-        // Scale to match the dynamically adjustable viewRadius
+        // Scale to match viewRadius, flip Y axis so World +Z goes UP in the Canvas
         double scale = MAP_SIZE / (viewRadius * 2);
-        gc.scale(scale, scale);
+        gc.scale(scale, -scale);
         
         // Translate the world relative to the drone
         gc.translate(-model.getX(), -model.getZ());
