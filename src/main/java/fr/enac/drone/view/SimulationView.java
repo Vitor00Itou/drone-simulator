@@ -283,6 +283,14 @@ public class SimulationView {
     public void adjustMinimapZoom(double delta) {
         hudView.adjustMinimapZoom(delta);
     }
+    
+    public double getMinimapZoom() {
+        return hudView.getMinimapZoom();
+    }
+    
+    public void setMinimapZoom(double zoom) {
+        hudView.setMinimapZoom(zoom);
+    }
 
     /**
      * Returns a copy of the recorded flight trail points.
@@ -290,6 +298,13 @@ public class SimulationView {
      */
     public List<double[]> getTrail() {
         return hudView.getTrail();
+    }
+
+    /**
+     * Clears the flight trail history from the HUD.
+     */
+    public void clearTrail() {
+        hudView.clearTrail();
     }
 
     /**

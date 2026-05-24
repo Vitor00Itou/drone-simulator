@@ -89,6 +89,14 @@ public class MiniMapView extends StackPane {
     public void adjustZoom(double delta) {
         zoomSlider.setValue(zoomSlider.getValue() + delta);
     }
+    
+    public double getZoom() {
+        return viewRadius;
+    }
+    
+    public void setZoom(double zoom) {
+        zoomSlider.setValue(zoom);
+    }
 
     private void handleMouseClicked(MouseEvent event) {
         if (onTargetClicked == null) return;

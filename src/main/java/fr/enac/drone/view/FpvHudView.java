@@ -78,11 +78,6 @@ public class FpvHudView extends StackPane {
         double x = model.getX();
         double z = model.getZ();
         trail.add(new double[]{x, z});
-        
-        // Limit trail size to prevent memory issues
-        if (trail.size() > 1000) {
-            trail.remove(0);
-        }
     }
 
     /**
@@ -109,6 +104,14 @@ public class FpvHudView extends StackPane {
     public void adjustMinimapZoom(double delta) {
         miniMapView.adjustZoom(delta);
     }
+    
+    public double getMinimapZoom() {
+        return miniMapView.getZoom();
+    }
+    
+    public void setMinimapZoom(double zoom) {
+        miniMapView.setZoom(zoom);
+    }
 
     /**
      * Returns a copy of the recorded flight trail points.
@@ -118,5 +121,12 @@ public class FpvHudView extends StackPane {
      */
     public List<double[]> getTrail() {
         return trail;
+    }
+
+    /**
+     * Clears the flight trail history.
+     */
+    public void clearTrail() {
+        trail.clear();
     }
 }
