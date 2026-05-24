@@ -18,6 +18,7 @@ public class JoystickService {
     private double roll = 0;
     private boolean armPressed = false;
     private boolean disarmPressed = false;
+    private boolean homePressed = false;
 
     public JoystickService() {
         controllers = new ControllerManager();
@@ -68,9 +69,10 @@ public class JoystickService {
             
             armPressed = state.a || state.start;
             disarmPressed = state.b || state.back;
+            homePressed = state.guide;
         } else {
             throttle = yaw = pitch = roll = 0.0;
-            armPressed = disarmPressed = false;
+            armPressed = disarmPressed = homePressed = false;
         }
     }
 
@@ -89,4 +91,5 @@ public class JoystickService {
     public double getRoll() { return roll; }
     public boolean isArmPressed() { return armPressed; }
     public boolean isDisarmPressed() { return disarmPressed; }
+    public boolean isHomePressed() { return homePressed; }
 }

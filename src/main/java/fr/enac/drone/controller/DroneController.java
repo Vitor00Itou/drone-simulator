@@ -47,14 +47,23 @@ public class DroneController {
         // One-shot actions (handled on key-down, not in the game loop)
         if (code == KeyCode.O) {
             model.takeoff();
+            cancelAutopilot();
         } else if (code == KeyCode.L) {
             model.land();
+            cancelAutopilot();
         } else if (code == KeyCode.F) {
             // Motors cut: horizontal velocity zeroed, drone falls under gravity
             model.disarm();
+            cancelAutopilot();
         }
     }
 
+    private void cancelAutopilot() {
+        if (autopilot != null) {
+            if (onAutopilotFinished != null) onAutopilotFinished.run();
+            setAutopilot(null);
+        }
+    }
 
     public void removeKey(KeyCode code) {
         activeKeys.remove(code);
@@ -120,14 +129,17 @@ public class DroneController {
         
         if (joystickService.isArmPressed()) {
             model.takeoff();
+            cancelAutopilot();
         }
         if (joystickService.isDisarmPressed()) {
             model.disarm();
+            cancelAutopilot();
         }
 
-        if (returnHomeAction != null && activeKeys.contains(KeyCode.H)) {
+        if (returnHomeAction != null && (activeKeys.contains(KeyCode.H) || joystickService.isHomePressed())) {
             returnHomeAction.run();
             activeKeys.remove(KeyCode.H); 
+            cancelAutopilot();
         }
 
         double pitchInput    = 0;
@@ -136,9 +148,13 @@ public class DroneController {
 
         // ---- Autopilot Mode ----
         if (autopilot != null && autopilot.isActive()) {
-            if (!activeKeys.isEmpty()) {
-                if (onAutopilotFinished != null) onAutopilotFinished.run();
-                setAutopilot(null);
+            boolean joystickMoved = Math.abs(joystickService.getPitch()) > 0.05 ||
+                                    Math.abs(joystickService.getRoll()) > 0.05 ||
+                                    Math.abs(joystickService.getYaw()) > 0.05 ||
+                                    Math.abs(joystickService.getThrottle()) > 0.05;
+
+            if (!activeKeys.isEmpty() || joystickMoved) {
+                cancelAutopilot();
             } else {
                 double[] cmd = autopilot.computeControls(model.getX(), model.getZ(), model.getYaw());
                 double yawCmd = cmd[0];        // -1..1, >0 = right
@@ -155,8 +171,7 @@ public class DroneController {
         }
 
         if (autopilot != null && !autopilot.isActive()) {
-            if (onAutopilotFinished != null) onAutopilotFinished.run();
-            setAutopilot(null);
+            cancelAutopilot();
         }
 
         // Yaw passes deltaTime directly (DroneModel guards against !armed internally)

@@ -19,8 +19,6 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -110,13 +108,16 @@ public class App extends Application {
 
         // Return to Home action (touche H)
         controller.setReturnHomeAction(() -> {
-            List<double[]> trail = view.getTrail();
-            if (trail.size() < 2) return;
-
-            List<double[]> reversed = new ArrayList<>(trail);
-            Collections.reverse(reversed);
-
-            controller.setAutopilot(new Autopilot(reversed));
+            // Set the baseline to the drone's spawn altitude instead of a hardcoded Y=0
+            double highestPointY = worldConfig.getDroneSpawn().getPosY();
+            if (worldConfig != null && worldConfig.getObjects() != null) {
+                for (var obj : worldConfig.getObjects()) {
+                    // Note: Y axis is downwards, so higher obstacles have smaller/more negative Y values
+                    double topY = obj.getPosY() - (obj.getSizeY() / 2.0);
+                    if (topY < highestPointY) highestPointY = topY;
+                }
+            }
+            model.returnToHome(highestPointY - 20.0); // Safe altitude = highest obstacle + 20 meters buffer
             view.clearMinimapTarget();
         });
 
