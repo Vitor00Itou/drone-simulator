@@ -19,16 +19,9 @@ import fr.enac.drone.model.world.WorldCollisionDetector;
  */
 public class DroneController {
 
-    private static final Set<KeyCode> PILOTING_KEYS = Set.of(
-            KeyCode.W,
-            KeyCode.S,
-            KeyCode.A,
-            KeyCode.D,
-            KeyCode.UP,
-            KeyCode.DOWN,
-            KeyCode.LEFT,
-            KeyCode.RIGHT
-    );
+    public enum InputDevice {
+        KEYBOARD, JOYSTICK
+    }
 
     private final DroneModel model;
     private final WorldCollisionDetector collisionDetector;
@@ -38,6 +31,8 @@ public class DroneController {
     private Autopilot autopilot;
     private Runnable onAutopilotFinished; // Callback to clear the target
     private Runnable returnHomeAction;    // Callback for returning home
+    private InputDevice lastUsedDevice = InputDevice.KEYBOARD;
+    private String keyboardLayout = "QWERTY";
 
     public DroneController(DroneModel model, WorldCollisionDetector collisionDetector) {
         this.model = model;
@@ -47,7 +42,9 @@ public class DroneController {
     }
 
     public static boolean isPilotingKey(KeyCode code) {
-        return PILOTING_KEYS.contains(code);
+        return code == KeyCode.W || code == KeyCode.S || code == KeyCode.A || code == KeyCode.D ||
+               code == KeyCode.Z || code == KeyCode.Q ||
+               code == KeyCode.UP || code == KeyCode.DOWN || code == KeyCode.LEFT || code == KeyCode.RIGHT;
     }
 
     public static boolean isFlightStartKey(KeyCode code) {
@@ -56,6 +53,17 @@ public class DroneController {
 
     public void updateInputDevices() {
         joystickService.update();
+        if (joystickService.hasAnyInput()) {
+            lastUsedDevice = InputDevice.JOYSTICK;
+        }
+    }
+
+    public boolean isPauseJustPressed() {
+        return joystickService.isPauseJustPressed();
+    }
+
+    public boolean isResetJustPressed() {
+        return joystickService.isResetJustPressed();
     }
 
     public boolean hasJoystickFlightStartInput() {
@@ -74,6 +82,7 @@ public class DroneController {
     /** Adds a key to the active set when pressed, and handles one-shot actions. */
     public void addKey(KeyCode code) {
         activeKeys.add(code);
+        lastUsedDevice = InputDevice.KEYBOARD;
 
         // One-shot actions (handled on key-down, not in the game loop)
         if (code == KeyCode.O) {
@@ -168,7 +177,12 @@ public class DroneController {
             model.takeoff();
             cancelAutopilot();
         }
-        if (joystickService.isDisarmPressed()) {
+
+        if (joystickService.isLandPressed()) {
+            model.land();
+            cancelAutopilot();
+        }
+        if (joystickService.isEmergencyPressed()) {
             model.disarm();
             cancelAutopilot();
         }
@@ -214,7 +228,10 @@ public class DroneController {
         }
 
         // Yaw passes deltaTime directly (DroneModel guards against !armed internally)
-        if (activeKeys.contains(KeyCode.A)) model.yawLeft(deltaTime);
+        KeyCode leftKey = "AZERTY".equals(keyboardLayout) ? KeyCode.Q : KeyCode.A;
+        KeyCode forwardKey = "AZERTY".equals(keyboardLayout) ? KeyCode.Z : KeyCode.W;
+        
+        if (activeKeys.contains(leftKey)) model.yawLeft(deltaTime);
         if (activeKeys.contains(KeyCode.D)) model.yawRight(deltaTime);
 
         double joyYaw = joystickService.getYaw();
@@ -225,7 +242,7 @@ public class DroneController {
         model.updateYaw(deltaTime);
 
         // Throttle
-        if (activeKeys.contains(KeyCode.W)) throttleInput -= 1;
+        if (activeKeys.contains(forwardKey)) throttleInput -= 1;
         if (activeKeys.contains(KeyCode.S)) throttleInput += 1;
         throttleInput += joystickService.getThrottle();
 
@@ -258,5 +275,13 @@ public class DroneController {
 
     public double getZoomInput() {
         return joystickService.getZoomInput();
+    }
+    
+    public InputDevice getLastUsedDevice() {
+        return lastUsedDevice;
+    }
+    
+    public void setKeyboardLayout(String layout) {
+        this.keyboardLayout = layout;
     }
 }

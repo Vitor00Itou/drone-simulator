@@ -25,13 +25,14 @@ import java.util.function.Consumer;
 public class FpvHudView extends StackPane {
 
     private final TelemetryPanel telemetryPanel;
+    private final CommandHelpPanel commandHelpPanel;
     private final MiniMapView miniMapView;
     private final ProximityWarningOverlay proximityOverlay;
     private final Label simulationStateLabel;
 
     public FpvHudView() {
         telemetryPanel = new TelemetryPanel();
-        CommandHelpPanel commandHelpPanel = new CommandHelpPanel();
+        commandHelpPanel = new CommandHelpPanel();
         miniMapView = new MiniMapView();
         proximityOverlay = new ProximityWarningOverlay();
         simulationStateLabel = createSimulationStateLabel();
@@ -172,5 +173,16 @@ public class FpvHudView extends StackPane {
     public void clearTrail() {
         miniMapView.clearTrail();
         proximityOverlay.clear();
+    }
+
+    public void setCommandHelpVisible(boolean visible) {
+        commandHelpPanel.setVisible(visible);
+        commandHelpPanel.setManaged(visible);
+    }
+
+    public void updateCommandHelp(fr.enac.drone.controller.DroneController.InputDevice device, String layout) {
+        if (commandHelpPanel != null) {
+            commandHelpPanel.updateHelpText(device, layout);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package fr.enac.drone.view;
 
+import fr.enac.drone.controller.DroneController.InputDevice;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -30,19 +31,42 @@ public class CommandHelpPanel extends VBox {
         )));
         setEffect(new DropShadow(12, Color.rgb(0, 0, 0, 0.28)));
 
-        getChildren().addAll(
-                createCommandRow("Space / Enter", "Start / Pause / Resume"),
-                createCommandRow("R",             "Reset simulation"),
-                createCommandRow("Esc",           "Close"),
-                createCommandRow("O",             "Takeoff"),
-                createCommandRow("L",             "Land"),
-                createCommandRow("F",             "Emergency Stop"),
-                createCommandRow("W / S",         "Altitude"),
-                createCommandRow("A / D",         "Heading"),
-                createCommandRow("Up / Down",     "Forward / Backward"),
-                createCommandRow("Left / Right",  "Lateral Movement"),
-                createCommandRow("H",             "Return to Home")
-        );
+        updateHelpText(InputDevice.KEYBOARD, "QWERTY");
+    }
+    
+    public void updateHelpText(InputDevice device, String layout) {
+        getChildren().clear();
+        
+        if (device == InputDevice.JOYSTICK) {
+            getChildren().addAll(
+                    createCommandRow("Start",         "Start / Pause / Resume"),
+                    createCommandRow("Back",          "Reset simulation"),
+                    createCommandRow("A",             "Takeoff / Arm"),
+                    createCommandRow("X",             "Land"),
+                    createCommandRow("B",             "Emergency Stop"),
+                    createCommandRow("Y",             "Return to Home"),
+                    createCommandRow("Left Stick \u2191\u2193", "Altitude"),
+                    createCommandRow("Left Stick \u2190\u2192", "Heading"),
+                    createCommandRow("Right Stick \u2191\u2193", "Forward / Backward"),
+                    createCommandRow("Right Stick \u2190\u2192", "Lateral Movement"),
+                    createCommandRow("LB / RB",       "Zoom Minimap")
+            );
+        } else {
+            String leftKey = "AZERTY".equals(layout) ? "Q" : "A";
+            String forwardKey = "AZERTY".equals(layout) ? "Z" : "W";
+            getChildren().addAll(
+                    createCommandRow("Space / Enter", "Start / Pause / Resume"),
+                    createCommandRow("R",             "Reset simulation"),
+                    createCommandRow("O",             "Takeoff / Arm"),
+                    createCommandRow("L",             "Land"),
+                    createCommandRow("F",             "Emergency Stop"),
+                    createCommandRow(forwardKey + " / S", "Altitude"),
+                    createCommandRow(leftKey + " / D", "Heading"),
+                    createCommandRow("Up / Down",     "Forward / Backward"),
+                    createCommandRow("Left / Right",  "Lateral Movement"),
+                    createCommandRow("H",             "Return to Home")
+            );
+        }
     }
 
     private HBox createCommandRow(String keys, String description) {
