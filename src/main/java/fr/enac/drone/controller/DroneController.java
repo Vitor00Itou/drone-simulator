@@ -209,16 +209,16 @@ public class DroneController {
             if (!activeKeys.isEmpty() || joystickMoved) {
                 cancelAutopilot();
             } else {
-                double[] cmd = autopilot.computeControls(model.getX(), model.getZ(), model.getYaw());
-                double yawCmd = cmd[0];        // -1..1, >0 = right
-                double pitchCmd = cmd[1];      // -1..1, >0 = forward
+                DroneControls cmd = autopilot.computeControls(model.getX(), model.getZ(), model.getYaw());
+                double yawCmd = cmd.yaw();
+                double pitchCmd = cmd.pitch();
+                double rollCmd = cmd.roll();
 
                 double desiredYawRate = yawCmd * model.getYawRateDegreesPerSecond();
                 model.setTargetYawVelocity(desiredYawRate);
                 model.updateYaw(deltaTime);
 
-                pitchInput = pitchCmd;
-                updatePhysicsWithCollision(pitchInput, 0, throttleInput, deltaTime);
+                updatePhysicsWithCollision(pitchCmd, rollCmd, throttleInput, deltaTime);
                 return;
             }
         }
@@ -227,18 +227,21 @@ public class DroneController {
             cancelAutopilot();
         }
 
-        // Yaw passes deltaTime directly (DroneModel guards against !armed internally)
         KeyCode leftKey = "AZERTY".equals(keyboardLayout) ? KeyCode.Q : KeyCode.A;
         KeyCode forwardKey = "AZERTY".equals(keyboardLayout) ? KeyCode.Z : KeyCode.W;
         
-        if (activeKeys.contains(leftKey)) model.yawLeft(deltaTime);
-        if (activeKeys.contains(KeyCode.D)) model.yawRight(deltaTime);
+        double yawInput = 0.0;
+        if (activeKeys.contains(leftKey)) yawInput -= 1.0;
+        if (activeKeys.contains(KeyCode.D)) yawInput += 1.0;
+        yawInput += joystickService.getYaw();
+        yawInput = clampInput(yawInput);
 
-        double joyYaw = joystickService.getYaw();
-        if (joyYaw < 0) model.yawLeft(deltaTime * Math.abs(joyYaw));
-        if (joyYaw > 0) model.yawRight(deltaTime * joyYaw);
+        if (Math.abs(yawInput) > 0.001) {
+            model.setManualYawInput(yawInput);
+        } else if (autopilot == null || !autopilot.isActive()) {
+            model.clearTargetYaw();
+        }
 
-        // Update yaw inertia (always called to apply drag when no input)
         model.updateYaw(deltaTime);
 
         // Throttle

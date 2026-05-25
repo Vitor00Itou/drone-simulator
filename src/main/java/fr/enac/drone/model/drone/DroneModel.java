@@ -62,8 +62,7 @@ public class DroneModel {
     private static final double HOVER_THRUST = 9.81;
 
     private static final double YAW_RATE         = 40.0;
-    private static final double YAW_ACCELERATION = 120.0;
-
+    private static final double YAW_ACCELERATION = 15.0; 
     private double yawSensitivity =
             DroneControlSettings.YAW_SENSITIVITY.getDefaultValue();
     private double maxHorizontalSpeed =
@@ -385,36 +384,13 @@ public class DroneModel {
         }
     }
 
-    public void yawLeft(double deltaTime) {
+    public void setManualYawInput(double input) {
         if (!isArmed()) return;
         if (state == FlightState.LANDING || state == FlightState.RETURNING_HOME) {
-            state = FlightState.FLYING; // Cancel
+            state = FlightState.FLYING; // Cancel auto modes
             clearTargetYaw();
         }
-
-        double targetYawVelocity = -getYawRateDegreesPerSecond();
-        yawVelocity +=
-                (targetYawVelocity - yawVelocity)
-                        * YAW_ACCELERATION
-                        * getSpoolFactor()
-                        * deltaTime;
-        yaw += yawVelocity * deltaTime;
-    }
-
-    public void yawRight(double deltaTime) {
-        if (!isArmed()) return;
-        if (state == FlightState.LANDING || state == FlightState.RETURNING_HOME) {
-            state = FlightState.FLYING; // Cancel
-            clearTargetYaw();
-        }
-
-        double targetYawVelocity = getYawRateDegreesPerSecond();
-        yawVelocity +=
-                (targetYawVelocity - yawVelocity)
-                        * YAW_ACCELERATION
-                        * getSpoolFactor()
-                        * deltaTime;
-        yaw += yawVelocity * deltaTime;
+        setTargetYawVelocity(input * getYawRateDegreesPerSecond());
     }
 
     public void updateYaw(double deltaTime) {

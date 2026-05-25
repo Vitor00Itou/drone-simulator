@@ -67,6 +67,14 @@ public class App extends Application {
         primaryStage.setScene(scene);
         primaryStage.setMaximized(true);
         primaryStage.setOnCloseRequest(event -> stopGameLoop());
+
+        // Prevent ghost keys from getting stuck when clicking outside the window or Alt-Tabbing
+        primaryStage.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (!isFocused && controller != null) {
+                controller.clearKeys();
+            }
+        });
+
         primaryStage.show();
 
         initializeSimulation();
@@ -107,17 +115,25 @@ public class App extends Application {
             }
 
             double startX = model.getX();
+            double startY = model.getY();
             double startZ = model.getZ();
 
-            List<double[]> waypoints =
-                    pathPlanner.findPath(startX, startZ, worldPos[0], worldPos[1]);
-
-            if (!waypoints.isEmpty()) {
-                controller.setAutopilot(new Autopilot(waypoints));
-            } else {
-                view.clearMinimapTarget();
-                System.out.println("No path found to the target.");
-            }
+            // Run A* pathfinding in a background thread to avoid freezing the game
+            Thread pathfindingThread = new Thread(() -> {
+                List<double[]> waypoints =
+                        pathPlanner.findPath(startX, startY, startZ, worldPos[0], worldPos[1]);
+                
+                Platform.runLater(() -> {
+                    if (!waypoints.isEmpty()) {
+                        controller.setAutopilot(new Autopilot(waypoints));
+                    } else {
+                        view.clearMinimapTarget();
+                        System.out.println("No path found to the target.");
+                    }
+                });
+            });
+            pathfindingThread.setDaemon(true);
+            pathfindingThread.start();
         });
 
         // Return to Home action (H key)
@@ -332,6 +348,11 @@ public class App extends Application {
 
                 double deltaTime = (now - lastUpdate) / 1_000_000_000.0;
                 lastUpdate = now;
+
+                // Cap deltaTime to prevent physics explosions/teleportation after lag spikes
+                if (deltaTime > 0.05) {
+                    deltaTime = 0.05;
+                }
 
                 if (controller == null) {
                     return;

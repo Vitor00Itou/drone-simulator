@@ -13,13 +13,13 @@ import fr.enac.drone.model.world.WorldObject;
 
 class PathPlannerTest {
 
-    private static final double CELL_SIZE = 10.0;
+    private static final double CELL_SIZE = 4.0;
 
     @Test
     void findsPathAcrossOpenWorld() {
         PathPlanner planner = new PathPlanner(worldWith(groundPlane()));
 
-        List<double[]> path = planner.findPath(0.0, 0.0, 30.0, 30.0);
+        List<double[]> path = planner.findPath(0.0, 0.0, 0.0, 30.0, 30.0);
 
         assertFalse(path.isEmpty());
         assertWaypointNear(path.get(0), 0.0, 0.0);
@@ -41,7 +41,7 @@ class PathPlannerTest {
         );
         PathPlanner planner = new PathPlanner(worldWith(groundPlane(), startBlock));
 
-        List<double[]> path = planner.findPath(0.0, 0.0, 30.0, 30.0);
+        List<double[]> path = planner.findPath(0.0, -5.0, 0.0, 30.0, 30.0);
 
         assertTrue(path.isEmpty());
     }
