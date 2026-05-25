@@ -12,10 +12,10 @@ import java.nio.file.StandardCopyOption;
 
 public class JoystickService {
     private ControllerManager controllers;
-    private double throttle = 0;
-    private double yaw = 0;
-    private double pitch = 0;
-    private double roll = 0;
+    private double verticalInput = 0;
+    private double yawInput = 0;
+    private double forwardInput = 0;
+    private double lateralInput = 0;
     private boolean armPressed = false;
     private boolean homePressed = false;
     private boolean landPressed = false;
@@ -71,10 +71,10 @@ public class JoystickService {
 
         if (state.isConnected) {
             // Mode 2 - Add 10% (0.1) deadzone for loose axes
-            throttle = applyDeadzone(state.leftStickY, 0.1);
-            yaw      = applyDeadzone(state.leftStickX, 0.1);
-            pitch    = applyDeadzone(-state.rightStickY, 0.1); // Inverted for correct Forward/Backward mapping
-            roll     = applyDeadzone(state.rightStickX, 0.1);
+            verticalInput = applyDeadzone(state.leftStickY, 0.1);
+            yawInput      = applyDeadzone(state.leftStickX, 0.1);
+            forwardInput  = applyDeadzone(-state.rightStickY, 0.1);
+            lateralInput  = applyDeadzone(state.rightStickX, 0.1);
             
             armPressed = state.a;
             landPressed = state.x;
@@ -91,7 +91,7 @@ public class JoystickService {
             // Clamp value
             zoomInput = Math.max(-1.0, Math.min(1.0, zoomInput));
         } else {
-            throttle = yaw = pitch = roll = zoomInput = 0.0;
+            verticalInput = yawInput = forwardInput = lateralInput = zoomInput = 0.0;
             armPressed = homePressed = landPressed = emergencyPressed = false;
             pausePressed = resetPressed = false;
         }
@@ -106,10 +106,10 @@ public class JoystickService {
         return Math.signum(value) * Math.min(1.0, ((Math.abs(value) - deadzone) / (1.0 - deadzone)) * 1.2);
     }
 
-    public double getThrottle() { return throttle; }
-    public double getYaw() { return yaw; }
-    public double getPitch() { return pitch; }
-    public double getRoll() { return roll; }
+    public double getVerticalInput() { return verticalInput; }
+    public double getYawInput() { return yawInput; }
+    public double getForwardInput() { return forwardInput; }
+    public double getLateralInput() { return lateralInput; }
     public boolean isArmPressed() { return armPressed; }
     public boolean isHomePressed() { return homePressed; }
     public boolean isLandPressed() { return landPressed; }
@@ -119,7 +119,10 @@ public class JoystickService {
     public double getZoomInput() { return zoomInput; }
     
     public boolean hasAnyInput() {
-        return Math.abs(throttle) > 0 || Math.abs(yaw) > 0 || Math.abs(pitch) > 0 || Math.abs(roll) > 0
+        return Math.abs(verticalInput) > 0
+                || Math.abs(yawInput) > 0
+                || Math.abs(forwardInput) > 0
+                || Math.abs(lateralInput) > 0
                 || armPressed || homePressed || landPressed || emergencyPressed
                 || pausePressed || resetPressed
                 || Math.abs(zoomInput) > 0;

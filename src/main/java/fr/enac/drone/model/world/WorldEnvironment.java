@@ -1,7 +1,5 @@
 package fr.enac.drone.model.world;
 
-import javafx.scene.paint.Color;
-
 /**
  * Represents environmental settings for the world configuration.
  */
@@ -28,8 +26,7 @@ public class WorldEnvironment {
         if (skyColor == null || skyColor.trim().isEmpty()) {
             throw new IllegalArgumentException("Sky color cannot be null or empty");
         }
-        validateColor(skyColor);
-        this.skyColor = skyColor;
+        this.skyColor = skyColor.trim();
     }
 
     public String getGroundColor() {
@@ -40,8 +37,7 @@ public class WorldEnvironment {
         if (groundColor == null || groundColor.trim().isEmpty()) {
             throw new IllegalArgumentException("Ground color cannot be null or empty");
         }
-        validateColor(groundColor);
-        this.groundColor = groundColor;
+        this.groundColor = groundColor.trim();
     }
 
     public double getGravity() {
@@ -69,14 +65,6 @@ public class WorldEnvironment {
 
     public void setShowTower(boolean showTower) {
         this.showTower = showTower;
-    }
-
-    private void validateColor(String color) {
-        try {
-            Color.web(color);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid color format: " + color, e);
-        }
     }
 
     @Override

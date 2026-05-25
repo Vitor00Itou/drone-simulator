@@ -9,8 +9,6 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
-import fr.enac.drone.model.drone.DroneModel;
-
 class WorldCollisionDetectorTest {
 
     private static final double EPSILON = 1e-9;
@@ -33,7 +31,7 @@ class WorldCollisionDetectorTest {
     void detectsHorizontalCollisionWithBoxSide() {
         WorldObject box = new WorldObject(
                 "Box",
-                "box",
+                WorldObjectType.BOX,
                 0.0,
                 -10.0,
                 0.0,
@@ -59,7 +57,7 @@ class WorldCollisionDetectorTest {
     void reportsNearestSurfaceBelowDrone() {
         WorldObject platform = new WorldObject(
                 "Platform",
-                "box",
+                WorldObjectType.BOX,
                 0.0,
                 -10.0,
                 0.0,
@@ -85,7 +83,7 @@ class WorldCollisionDetectorTest {
     private static WorldObject groundPlane() {
         return new WorldObject(
                 "Ground",
-                "plane",
+                WorldObjectType.PLANE,
                 0.0,
                 0.0,
                 0.0,
@@ -94,32 +92,5 @@ class WorldCollisionDetectorTest {
                 5000.0,
                 "#228B22"
         );
-    }
-
-    private static final class TestDrone extends DroneModel {
-        private final double x;
-        private final double y;
-        private final double z;
-
-        private TestDrone(double x, double y, double z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-
-        @Override
-        public double getX() {
-            return x;
-        }
-
-        @Override
-        public double getY() {
-            return y;
-        }
-
-        @Override
-        public double getZ() {
-            return z;
-        }
     }
 }

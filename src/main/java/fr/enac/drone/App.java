@@ -1,17 +1,19 @@
 package fr.enac.drone;
 
-import fr.enac.drone.controller.Autopilot;
 import fr.enac.drone.controller.DroneController;
-import fr.enac.drone.model.PathPlanner;
+import fr.enac.drone.input.InputDevice;
 import fr.enac.drone.model.SimulationState;
+import fr.enac.drone.model.WorldPosition2D;
 import fr.enac.drone.model.drone.DroneControlSettings;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.drone.DroneSpawn;
 import fr.enac.drone.model.world.WorldConfiguration;
-import fr.enac.drone.model.world.WorldPersistence;
 import fr.enac.drone.model.world.WorldCollisionDetector;
-import fr.enac.drone.view.SettingsView;
+import fr.enac.drone.navigation.Autopilot;
+import fr.enac.drone.navigation.PathPlanner;
+import fr.enac.drone.persistence.WorldPersistence;
 import fr.enac.drone.view.SimulationView;
+import fr.enac.drone.view.settings.SettingsState;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -46,9 +48,9 @@ public class App extends Application {
     private double droneMaxVerticalSpeed =
             DroneControlSettings.MAX_VERTICAL_SPEED.getDefaultValue();
     private double minimapZoom = 1000.0;
-    private final SettingsView.State settingsState = new SettingsView.State();
+    private final SettingsState settingsState = new SettingsState();
 
-    private DroneController.InputDevice currentInputDevice = DroneController.InputDevice.KEYBOARD;
+    private InputDevice currentInputDevice = InputDevice.KEYBOARD;
 
     private DroneModel model;
     private DroneController controller;
@@ -118,10 +120,9 @@ public class App extends Application {
             double startY = model.getY();
             double startZ = model.getZ();
 
-            // Run A* pathfinding in a background thread to avoid freezing the game
             Thread pathfindingThread = new Thread(() -> {
-                List<double[]> waypoints =
-                        pathPlanner.findPath(startX, startY, startZ, worldPos[0], worldPos[1]);
+                List<WorldPosition2D> waypoints =
+                        pathPlanner.findPath(startX, startY, startZ, worldPos.x(), worldPos.z());
                 
                 Platform.runLater(() -> {
                     if (!waypoints.isEmpty()) {
@@ -143,7 +144,7 @@ public class App extends Application {
             if (worldConfig != null && worldConfig.getObjects() != null) {
                 for (var obj : worldConfig.getObjects()) {
                     // Note: Y axis is downwards, so higher obstacles have smaller/more negative Y values
-                    double topY = obj.getPosY() - (obj.getSizeY() / 2.0);
+                    double topY = obj.getTopY();
                     if (topY < highestPointY) highestPointY = topY;
                 }
             }
@@ -378,11 +379,7 @@ public class App extends Application {
                     setSimulationState(SimulationState.RUNNING);
                 }
 
-                DroneController.InputDevice newDevice = controller.getLastUsedDevice();
-                if (newDevice != currentInputDevice) {
-                    currentInputDevice = newDevice;
-                    view.updateCommandHelp(currentInputDevice, settingsState.getKeyboardLayout());
-                }
+                handleInputDeviceChanged(controller.getLastUsedDevice());
 
                 if (simulationState == SimulationState.RUNNING) {
                     controller.update(deltaTime);
@@ -393,6 +390,15 @@ public class App extends Application {
         };
 
         gameLoop.start();
+    }
+
+    private void handleInputDeviceChanged(InputDevice newDevice) {
+        if (newDevice == currentInputDevice) {
+            return;
+        }
+
+        currentInputDevice = newDevice;
+        view.updateCommandHelp(currentInputDevice, settingsState.getKeyboardLayout());
     }
 
     private void handleWorldLoaded(WorldConfiguration config, String filename) {

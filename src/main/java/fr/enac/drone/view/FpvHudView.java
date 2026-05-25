@@ -1,6 +1,9 @@
 package fr.enac.drone.view;
 
+import fr.enac.drone.input.InputDevice;
+import fr.enac.drone.input.KeyboardLayout;
 import fr.enac.drone.model.SimulationState;
+import fr.enac.drone.model.WorldPosition2D;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.drone.DroneTelemetry;
 import fr.enac.drone.model.world.WorldConfiguration;
@@ -129,7 +132,7 @@ public class FpvHudView extends StackPane {
      *
      * @param callback receives the world coordinates {x, z} of the clicked point
      */
-    public void setOnMinimapTargetClicked(Consumer<double[]> callback) {
+    public void setOnMinimapTargetClicked(Consumer<WorldPosition2D> callback) {
         miniMapView.setOnTargetClicked(callback);
     }
 
@@ -158,12 +161,11 @@ public class FpvHudView extends StackPane {
     }
 
     /**
-     * Returns a copy of the recorded flight trail points.
-     * Each element is a double[] {x, z} in world coordinates.
+     * Returns a copy of the recorded flight trail points in world coordinates.
      *
      * @return list of trail points
      */
-    public List<double[]> getTrail() {
+    public List<WorldPosition2D> getTrail() {
         return miniMapView.getTrail();
     }
 
@@ -180,7 +182,7 @@ public class FpvHudView extends StackPane {
         commandHelpPanel.setManaged(visible);
     }
 
-    public void updateCommandHelp(fr.enac.drone.controller.DroneController.InputDevice device, String layout) {
+    public void updateCommandHelp(InputDevice device, KeyboardLayout layout) {
         if (commandHelpPanel != null) {
             commandHelpPanel.updateHelpText(device, layout);
         }

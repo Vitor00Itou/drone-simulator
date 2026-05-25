@@ -1,6 +1,7 @@
 package fr.enac.drone.view;
 
 import fr.enac.drone.model.SimulationState;
+import fr.enac.drone.model.WorldPosition2D;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.world.WorldConfiguration;
 import fr.enac.drone.model.world.WorldObject;
@@ -36,10 +37,10 @@ public class MiniMapView extends StackPane {
     private final Canvas canvas;
     private final Slider zoomSlider;
     // Flight trail history (X, Z coordinates)
-    private final List<double[]> trailPoints = new ArrayList<>();
+    private final List<WorldPosition2D> trailPoints = new ArrayList<>();
 
-    private Consumer<double[]> onTargetClicked;
-    private double[] targetPos = null;
+    private Consumer<WorldPosition2D> onTargetClicked;
+    private WorldPosition2D targetPos = null;
     private double viewRadius = 1000.0; // Default Zoom limit: 1km around the drone
     private double lastDroneX = 0;
     private double lastDroneZ = 0;
@@ -91,7 +92,7 @@ public class MiniMapView extends StackPane {
         getChildren().addAll(canvas, zoomSlider);
     }
 
-    public void setOnTargetClicked(Consumer<double[]> callback) {
+    public void setOnTargetClicked(Consumer<WorldPosition2D> callback) {
         this.onTargetClicked = callback;
     }
 
@@ -111,7 +112,7 @@ public class MiniMapView extends StackPane {
         zoomSlider.setValue(zoom);
     }
 
-    public List<double[]> getTrail() {
+    public List<WorldPosition2D> getTrail() {
         return new ArrayList<>(trailPoints);
     }
 
@@ -141,7 +142,7 @@ public class MiniMapView extends StackPane {
         double worldX = lastDroneX + (rotX / scale);
         double worldZ = lastDroneZ + (rotY / -scale);
 
-        targetPos = new double[]{worldX, worldZ};
+        targetPos = new WorldPosition2D(worldX, worldZ);
         onTargetClicked.accept(targetPos);
     }
 
@@ -169,7 +170,7 @@ public class MiniMapView extends StackPane {
         Color groundColor = Color.rgb(34, 139, 34); 
 
         for (WorldObject obj : config.getObjects()) {
-            if ("plane".equals(obj.getType())) {
+            if (obj.isPlane()) {
                 groundWidth = obj.getSizeX();
                 groundHeight = obj.getSizeZ();
                 groundX = obj.getPosX();
@@ -231,7 +232,7 @@ public class MiniMapView extends StackPane {
         double cz = model.getZ();
 
         if (!trailInitialized) {
-            trailPoints.add(new double[]{cx, cz});
+            trailPoints.add(new WorldPosition2D(cx, cz));
             lastTrailX = cx;
             lastTrailZ = cz;
             trailInitialized = true;
@@ -244,7 +245,7 @@ public class MiniMapView extends StackPane {
             if (trailPoints.size() >= MAX_TRAIL_POINTS) {
                 trailPoints.remove(0);
             }
-            trailPoints.add(new double[]{cx, cz});
+            trailPoints.add(new WorldPosition2D(cx, cz));
             lastTrailX = cx;
             lastTrailZ = cz;
         }
@@ -259,12 +260,12 @@ public class MiniMapView extends StackPane {
         gc.setLineWidth(2.0 / scale);
         gc.beginPath();
         boolean first = true;
-        for (double[] point : trailPoints) {
+        for (WorldPosition2D point : trailPoints) {
             if (first) {
-                gc.moveTo(point[0], point[1]);
+                gc.moveTo(point.x(), point.z());
                 first = false;
             } else {
-                gc.lineTo(point[0], point[1]);
+                gc.lineTo(point.x(), point.z());
             }
         }
         gc.stroke();
@@ -272,7 +273,7 @@ public class MiniMapView extends StackPane {
 
     private void drawWorldObjects(GraphicsContext gc, WorldConfiguration config) {
         for (WorldObject obj : config.getObjects()) {
-            if ("plane".equals(obj.getType())) continue;
+            if (obj.isPlane()) continue;
 
             try {
                 gc.setFill(Color.web(obj.getColor()));
@@ -280,8 +281,8 @@ public class MiniMapView extends StackPane {
                 gc.setFill(Color.GRAY);
             }
 
-            if ("cylinder".equals(obj.getType())) {
-                double r = obj.getSizeX(); // Radius
+            if (obj.isCylinder()) {
+                double r = obj.getRadius();
                 gc.fillOval(obj.getPosX() - r, obj.getPosZ() - r, r * 2, r * 2);
             } else {
                 double w = obj.getSizeX();
@@ -298,8 +299,8 @@ public class MiniMapView extends StackPane {
 
         gc.setStroke(Color.RED);
         gc.setLineWidth(3.0 / scale);
-        double tx = targetPos[0];
-        double tz = targetPos[1];
+        double tx = targetPos.x();
+        double tz = targetPos.z();
         double crossSize = 5.0;
         gc.strokeLine(tx - crossSize, tz - crossSize, tx + crossSize, tz + crossSize);
         gc.strokeLine(tx - crossSize, tz + crossSize, tx + crossSize, tz - crossSize);

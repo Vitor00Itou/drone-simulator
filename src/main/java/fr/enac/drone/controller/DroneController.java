@@ -3,9 +3,13 @@ package fr.enac.drone.controller;
 import javafx.scene.input.KeyCode;
 import java.util.HashSet;
 import java.util.Set;
+import fr.enac.drone.input.InputDevice;
+import fr.enac.drone.input.KeyboardLayout;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.world.WorldCollision;
 import fr.enac.drone.model.world.WorldCollisionDetector;
+import fr.enac.drone.navigation.Autopilot;
+import fr.enac.drone.navigation.FlightControlCommand;
 
 /**
  * Tracks active keys and processes continuous movement logic
@@ -18,11 +22,6 @@ import fr.enac.drone.model.world.WorldCollisionDetector;
  *   H → Return to Home (follows trail in reverse)
  */
 public class DroneController {
-
-    public enum InputDevice {
-        KEYBOARD, JOYSTICK
-    }
-
     private final DroneModel model;
     private final WorldCollisionDetector collisionDetector;
     // Tracks currently pressed keys to allow simultaneous inputs
@@ -32,7 +31,7 @@ public class DroneController {
     private Runnable onAutopilotFinished; // Callback to clear the target
     private Runnable returnHomeAction;    // Callback for returning home
     private InputDevice lastUsedDevice = InputDevice.KEYBOARD;
-    private String keyboardLayout = "QWERTY";
+    private KeyboardLayout keyboardLayout = KeyboardLayout.QWERTY;
 
     public DroneController(DroneModel model, WorldCollisionDetector collisionDetector) {
         this.model = model;
@@ -68,10 +67,10 @@ public class DroneController {
 
     public boolean hasJoystickFlightStartInput() {
         return joystickService.isArmPressed()
-                || Math.abs(joystickService.getThrottle()) > 0
-                || Math.abs(joystickService.getYaw()) > 0
-                || Math.abs(joystickService.getPitch()) > 0
-                || Math.abs(joystickService.getRoll()) > 0;
+                || Math.abs(joystickService.getVerticalInput()) > 0
+                || Math.abs(joystickService.getYawInput()) > 0
+                || Math.abs(joystickService.getForwardInput()) > 0
+                || Math.abs(joystickService.getLateralInput()) > 0;
     }
 
     // Useful to gracefully shut down SDL when the window is closed
@@ -136,18 +135,18 @@ public class DroneController {
      * Applies drone physics and resolves collisions using the drone inertia.
      */
     private void updatePhysicsWithCollision(
-            double pitchInput,
-            double rollInput,
-            double throttleInput,
+            double forwardInput,
+            double lateralInput,
+            double verticalInput,
             double deltaTime
     ) {
         // Raycast-like check for the surface exactly below the drone
         double groundYBelow = collisionDetector.getGroundHeightBelow(model);
 
         model.updatePhysics(
-                pitchInput,
-                rollInput,
-                throttleInput,
+                forwardInput,
+                lateralInput,
+                verticalInput,
                 groundYBelow,
                 deltaTime
         );
@@ -194,31 +193,32 @@ public class DroneController {
             cancelAutopilot();
         }
 
-        double pitchInput    = 0;
-        double rollInput     = 0;
-        double throttleInput = 0;
+        double forwardInput = 0;
+        double lateralInput = 0;
+        double verticalInput = 0;
 
         // ---- Autopilot Mode ----
         if (autopilot != null && autopilot.isActive()) {
             boolean joystickMoved =
-                    Math.abs(joystickService.getPitch()) > 0.05
-                            || Math.abs(joystickService.getRoll()) > 0.05
-                            || Math.abs(joystickService.getYaw()) > 0.05
-                            || Math.abs(joystickService.getThrottle()) > 0.05;
+                    Math.abs(joystickService.getForwardInput()) > 0.05
+                            || Math.abs(joystickService.getLateralInput()) > 0.05
+                            || Math.abs(joystickService.getYawInput()) > 0.05
+                            || Math.abs(joystickService.getVerticalInput()) > 0.05;
 
             if (!activeKeys.isEmpty() || joystickMoved) {
                 cancelAutopilot();
             } else {
-                DroneControls cmd = autopilot.computeControls(model.getX(), model.getZ(), model.getYaw());
-                double yawCmd = cmd.yaw();
-                double pitchCmd = cmd.pitch();
-                double rollCmd = cmd.roll();
+                FlightControlCommand command =
+                        autopilot.computeControls(model.getX(), model.getZ(), model.getYaw());
+                double yawInput = command.yawInput();
+                double autopilotForwardInput = command.forwardInput();
+                double autopilotLateralInput = command.lateralInput();
 
-                double desiredYawRate = yawCmd * model.getYawRateDegreesPerSecond();
+                double desiredYawRate = yawInput * model.getYawRateDegreesPerSecond();
                 model.setTargetYawVelocity(desiredYawRate);
                 model.updateYaw(deltaTime);
 
-                updatePhysicsWithCollision(pitchCmd, rollCmd, throttleInput, deltaTime);
+                updatePhysicsWithCollision(autopilotForwardInput, autopilotLateralInput, verticalInput, deltaTime);
                 return;
             }
         }
@@ -227,13 +227,13 @@ public class DroneController {
             cancelAutopilot();
         }
 
-        KeyCode leftKey = "AZERTY".equals(keyboardLayout) ? KeyCode.Q : KeyCode.A;
-        KeyCode forwardKey = "AZERTY".equals(keyboardLayout) ? KeyCode.Z : KeyCode.W;
+        KeyCode leftKey = keyboardLayout.getYawLeftKey();
+        KeyCode verticalUpKey = keyboardLayout.getVerticalUpKey();
         
         double yawInput = 0.0;
         if (activeKeys.contains(leftKey)) yawInput -= 1.0;
         if (activeKeys.contains(KeyCode.D)) yawInput += 1.0;
-        yawInput += joystickService.getYaw();
+        yawInput += joystickService.getYawInput();
         yawInput = clampInput(yawInput);
 
         if (Math.abs(yawInput) > 0.001) {
@@ -244,30 +244,30 @@ public class DroneController {
 
         model.updateYaw(deltaTime);
 
-        // Throttle
-        if (activeKeys.contains(forwardKey)) throttleInput -= 1;
-        if (activeKeys.contains(KeyCode.S)) throttleInput += 1;
-        throttleInput += joystickService.getThrottle();
+        // Vertical movement
+        if (activeKeys.contains(verticalUpKey)) verticalInput -= 1;
+        if (activeKeys.contains(KeyCode.S)) verticalInput += 1;
+        verticalInput += joystickService.getVerticalInput();
 
-        // Pitch and Roll
-        if (activeKeys.contains(KeyCode.UP))    pitchInput += 1;
-        if (activeKeys.contains(KeyCode.DOWN))  pitchInput -= 1;
-        pitchInput += joystickService.getPitch();
+        // Horizontal movement relative to the drone heading
+        if (activeKeys.contains(KeyCode.UP))    forwardInput += 1;
+        if (activeKeys.contains(KeyCode.DOWN))  forwardInput -= 1;
+        forwardInput += joystickService.getForwardInput();
 
-        if (activeKeys.contains(KeyCode.RIGHT)) rollInput  += 1;
-        if (activeKeys.contains(KeyCode.LEFT))  rollInput  -= 1;
-        rollInput += joystickService.getRoll();
+        if (activeKeys.contains(KeyCode.RIGHT)) lateralInput  += 1;
+        if (activeKeys.contains(KeyCode.LEFT))  lateralInput  -= 1;
+        lateralInput += joystickService.getLateralInput();
 
         // Clamp inputs between -1 and 1 to prevent keyboard + joystick from doubling the speed
-        pitchInput = clampInput(pitchInput);
-        rollInput = clampInput(rollInput);
-        throttleInput = clampInput(throttleInput);
+        forwardInput = clampInput(forwardInput);
+        lateralInput = clampInput(lateralInput);
+        verticalInput = clampInput(verticalInput);
 
         // Update drone movement while preserving inertia and handling collisions
         updatePhysicsWithCollision(
-            pitchInput,
-            rollInput,
-            throttleInput,
+            forwardInput,
+            lateralInput,
+            verticalInput,
             deltaTime
         );
     }
@@ -284,7 +284,7 @@ public class DroneController {
         return lastUsedDevice;
     }
     
-    public void setKeyboardLayout(String layout) {
-        this.keyboardLayout = layout;
+    public void setKeyboardLayout(KeyboardLayout layout) {
+        this.keyboardLayout = layout == null ? KeyboardLayout.QWERTY : layout;
     }
 }

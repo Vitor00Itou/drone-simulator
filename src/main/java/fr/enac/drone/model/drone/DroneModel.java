@@ -12,11 +12,6 @@ import fr.enac.drone.utils.MathUtils;
  */
 public class DroneModel {
 
-    public enum ReturnToHomePhase {
-        ASCENDING,
-        CRUISING
-    }
-
     private static final double METERS_PER_UNIT = 1.0;
 
     // Drone physical dimensions used by rendering and collision detection
@@ -81,7 +76,7 @@ public class DroneModel {
     private static final double DRAIN_HOVER_BASE    = 1.0;
     private static final double DRAIN_PER_METER_ALT = 0.002;
     private static final double DRAIN_ACCEL_H       = 0.04;
-    private static final double DRAIN_THROTTLE_V    = 0.5;
+    private static final double DRAIN_VERTICAL_INPUT = 0.5;
     private static final double DRAIN_YAW           = 0.002;
 
     // ── Autopilot support ─────────────────────────────────────────────
@@ -162,9 +157,9 @@ public class DroneModel {
     // ───────────────────────────────────────────────────────────────────
 
     public void updatePhysics(
-            double pitchInput,
-            double rollInput,
-            double throttleInput,
+            double forwardInput,
+            double lateralInput,
+            double verticalInput,
             double groundYBelow,
             double deltaTime
     ) {
@@ -185,30 +180,30 @@ public class DroneModel {
 
         // Auto states override user input for controlled maneuvers
         if (state == FlightState.TAKING_OFF) {
-            pitchInput = 0;
-            rollInput = 0;
+            forwardInput = 0;
+            lateralInput = 0;
             
             if (this.y <= targetTakeoffY) {
                 state = FlightState.FLYING;
                 stateTimer = 0.4; // Bypass mid-air spool up after a normal takeoff
-                throttleInput = 0; // Transition to hover
+                verticalInput = 0; // Transition to hover
             } else {
                 if (stateTimer < 1.0) {
                     // Phase 1: Spool up delay (Wait 1 second before lifting)
-                    throttleInput = 0.0; 
+                    verticalInput = 0.0;
                 } else {
-                    // Phase 2: Smoothly ramp up upward throttle to a max of 50% (-0.5)
-                    throttleInput = Math.max(-0.5, -(stateTimer - 1.0) * 0.5);
+                    // Phase 2: Smoothly ramp up upward vertical input to a max of 50% (-0.5)
+                    verticalInput = Math.max(-0.5, -(stateTimer - 1.0) * 0.5);
                 }
             }
         } else if (state == FlightState.RETURNING_HOME) {
-            if (Math.abs(pitchInput) > 0.01 || Math.abs(rollInput) > 0.01 || Math.abs(throttleInput) > 0.01) {
+            if (Math.abs(forwardInput) > 0.01 || Math.abs(lateralInput) > 0.01 || Math.abs(verticalInput) > 0.01) {
                 state = FlightState.FLYING; // Cancel RTH on any user input
                 clearTargetYaw();
             } else {
-                pitchInput = 0;
-                rollInput = 0;
-                throttleInput = 0;
+                forwardInput = 0;
+                lateralInput = 0;
+                verticalInput = 0;
                 
                 double dx = homeX - this.x;
                 double dz = homeZ - this.z;
@@ -228,14 +223,14 @@ public class DroneModel {
                 if (rthPhase == ReturnToHomePhase.ASCENDING) {
                     // Phase 0: Ascend directly upward to the safe Y coordinate
                     if (this.y > rthSafeY) {
-                        throttleInput = -1.0; // Ascend full speed
+                        verticalInput = -1.0; // Ascend full speed
                     } else {
                         rthPhase = ReturnToHomePhase.CRUISING; // Start cruising
                     }
                 } else if (rthPhase == ReturnToHomePhase.CRUISING) {
                     // Phase 1: Maintain safe altitude while flying directly to (homeX, homeZ)
-                    if (this.y > rthSafeY + 1.0) throttleInput = -0.5;
-                    else if (this.y < rthSafeY - 1.0) throttleInput = 0.5;
+                    if (this.y > rthSafeY + 1.0) verticalInput = -0.5;
+                    else if (this.y < rthSafeY - 1.0) verticalInput = 0.5;
 
                     if (dist < 1.0) { // Tolerance of 1 meter
                         clearTargetYaw();
@@ -248,18 +243,18 @@ public class DroneModel {
                         // Slow down gracefully if we are within 10 meters of the base
                         double speedFactor = Math.min(1.0, dist / 10.0);
                         
-                        // Inverse kinematics to figure out what sticks we need to press to go to dirX/dirZ
-                        pitchInput = (dirX * Math.sin(radYaw) + dirZ * Math.cos(radYaw)) * speedFactor;
-                        rollInput  = (dirX * Math.cos(radYaw) - dirZ * Math.sin(radYaw)) * speedFactor;
+                        // Inverse kinematics to figure out what stick inputs we need to go to dirX/dirZ
+                        forwardInput = (dirX * Math.sin(radYaw) + dirZ * Math.cos(radYaw)) * speedFactor;
+                        lateralInput = (dirX * Math.cos(radYaw) - dirZ * Math.sin(radYaw)) * speedFactor;
                     }
                 }
             }
         } else if (state == FlightState.LANDING) {
-            if (Math.abs(pitchInput) > 0.01 || Math.abs(rollInput) > 0.01 || Math.abs(throttleInput) > 0.01) {
+            if (Math.abs(forwardInput) > 0.01 || Math.abs(lateralInput) > 0.01 || Math.abs(verticalInput) > 0.01) {
                 state = FlightState.FLYING; // Cancel auto-landing on user input
             } else {
-                pitchInput = 0;
-                rollInput = 0;
+                forwardInput = 0;
+                lateralInput = 0;
 
                 // Active braking to prevent horizontal drifting during landing
                 velocityX -= velocityX * 4.0 * deltaTime;
@@ -284,20 +279,20 @@ public class DroneModel {
                     targetDescentSpeed = 0.5; // Very slow and gentle touchdown
                 }
 
-                // Calculate the required throttle input to achieve the exact target descent speed
-                throttleInput = targetDescentSpeed / maxVerticalSpeed;
+                // Calculate the required vertical input to achieve the exact target descent speed
+                verticalInput = targetDescentSpeed / maxVerticalSpeed;
             }
         }
 
         // Normalize input vector
         double inputLength =
                 Math.sqrt(
-                        pitchInput * pitchInput
-                                + rollInput * rollInput
+                        forwardInput * forwardInput
+                                + lateralInput * lateralInput
                 );
         if (inputLength > 1.0) {
-            pitchInput /= inputLength;
-            rollInput /= inputLength;
+            forwardInput /= inputLength;
+            lateralInput /= inputLength;
             inputLength = 1.0;
         }
 
@@ -305,11 +300,11 @@ public class DroneModel {
         double radYaw = Math.toRadians(this.yaw);
 
         double moveX =
-                (pitchInput * Math.sin(radYaw))
-                        + (rollInput * Math.cos(radYaw));
+                (forwardInput * Math.sin(radYaw))
+                        + (lateralInput * Math.cos(radYaw));
         double moveZ =
-                (pitchInput * Math.cos(radYaw))
-                        - (rollInput * Math.sin(radYaw));
+                (forwardInput * Math.cos(radYaw))
+                        - (lateralInput * Math.sin(radYaw));
 
         double targetVelocityX =
                 moveX * maxHorizontalSpeed;
@@ -335,7 +330,7 @@ public class DroneModel {
 
         // Vertical movement
         double targetVelocityY =
-                throttleInput * maxVerticalSpeed;
+                verticalInput * maxVerticalSpeed;
 
         double accelY =
                 (targetVelocityY - velocityY)
@@ -371,7 +366,7 @@ public class DroneModel {
                     Math.sqrt(accelX * accelX + accelZ * accelZ)
                             / deltaTime;
             drainRate += hAccelMag * DRAIN_ACCEL_H;
-            drainRate += Math.abs(throttleInput) * DRAIN_THROTTLE_V;
+            drainRate += Math.abs(verticalInput) * DRAIN_VERTICAL_INPUT;
             drainRate += Math.abs(yawVelocity) * DRAIN_YAW;
         }
 

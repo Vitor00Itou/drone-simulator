@@ -81,12 +81,12 @@ public class ProximityWarningOverlay extends StackPane {
         double droneZ = drone.getZ();
         
         for (WorldObject obj : worldConfig.getObjects()) {
-            if ("plane".equals(obj.getType())) continue; // Ignore ground for horizontal proximity
+            if (obj.isPlane()) continue; // Ignore ground for horizontal proximity
 
             // Check vertical overlap with a small 0.1m tolerance margin
             // This prevents false alarms when the drone is simply resting on top of a tower/base
-            double objTop = obj.getPosY() - obj.getSizeY() / 2.0;
-            double objBottom = obj.getPosY() + obj.getSizeY() / 2.0;
+            double objTop = obj.getTopY();
+            double objBottom = obj.getBottomY();
             if (droneY + drone.getDroneHeight() / 2.0 <= objTop + 0.1 || droneY - drone.getDroneHeight() / 2.0 >= objBottom - 0.1) {
                 continue; // We are safely flying over or completely under the object
             }
@@ -94,18 +94,18 @@ public class ProximityWarningOverlay extends StackPane {
             double closestX = obj.getPosX();
             double closestZ = obj.getPosZ();
 
-            if ("box".equals(obj.getType())) {
-                double halfW = obj.getSizeX() / 2.0;
-                double halfD = obj.getSizeZ() / 2.0;
+            if (obj.isBox()) {
+                double halfW = obj.getHalfWidth();
+                double halfD = obj.getHalfDepth();
                 closestX = Math.max(obj.getPosX() - halfW, Math.min(droneX, obj.getPosX() + halfW));
                 closestZ = Math.max(obj.getPosZ() - halfD, Math.min(droneZ, obj.getPosZ() + halfD));
-            } else if ("cylinder".equals(obj.getType())) {
+            } else if (obj.isCylinder()) {
                 double dx = droneX - obj.getPosX();
                 double dz = droneZ - obj.getPosZ();
                 double dist = Math.sqrt(dx * dx + dz * dz);
                 if (dist > 0) {
-                    closestX = obj.getPosX() + (dx / dist) * Math.min(dist, obj.getSizeX());
-                    closestZ = obj.getPosZ() + (dz / dist) * Math.min(dist, obj.getSizeX());
+                    closestX = obj.getPosX() + (dx / dist) * Math.min(dist, obj.getRadius());
+                    closestZ = obj.getPosZ() + (dz / dist) * Math.min(dist, obj.getRadius());
                 }
             }
 

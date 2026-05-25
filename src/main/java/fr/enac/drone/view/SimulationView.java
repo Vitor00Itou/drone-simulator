@@ -1,9 +1,13 @@
 package fr.enac.drone.view;
 
+import fr.enac.drone.input.InputDevice;
+import fr.enac.drone.input.KeyboardLayout;
 import fr.enac.drone.model.SimulationState;
+import fr.enac.drone.model.WorldPosition2D;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.world.WorldConfiguration;
 import fr.enac.drone.model.world.WorldObject;
+import fr.enac.drone.view.settings.SettingsState;
 import javafx.scene.AmbientLight;
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -55,7 +59,7 @@ public class SimulationView {
             WorldConfiguration worldConfig,
             String currentWorldFilename,
             BiConsumer<WorldConfiguration, String> onWorldApplied,
-            SettingsView.State settingsState
+            SettingsState settingsState
     ) {
 
         this.model =
@@ -121,11 +125,7 @@ public class SimulationView {
                 SceneAntialiasing.BALANCED
         );
 
-        subScene.setFill(
-                Color.web(
-                        worldConfig.getEnvironment().getSkyColor()
-                )
-        );
+        subScene.setFill(parseColor(worldConfig.getEnvironment().getSkyColor(), Color.rgb(135, 206, 235)));
 
         // Camera
         camera = new PerspectiveCamera(true);
@@ -182,23 +182,23 @@ public class SimulationView {
     private Node createVisualObject(WorldObject obj) {
         Node node = null;
 
-        switch (obj.getType().toLowerCase()) {
+        switch (obj.getType()) {
 
-            case "box":
+            case BOX:
                 Box box = new Box(obj.getSizeX(), obj.getSizeY(), obj.getSizeZ());
                 box.setMaterial(materialFactory.getMaterial(obj));
                 node = box;
 
                 break;
 
-            case "cylinder":
-                Cylinder cylinder = new Cylinder(obj.getSizeX(), obj.getSizeY());
+            case CYLINDER:
+                Cylinder cylinder = new Cylinder(obj.getRadius(), obj.getSizeY());
                 cylinder.setMaterial(materialFactory.getMaterial(obj));
                 node = cylinder;
 
                 break;
 
-            case "plane":
+            case PLANE:
                 node = createGroundPlane(obj);
                 break;
 
@@ -246,6 +246,15 @@ public class SimulationView {
         }
 
         return ground;
+    }
+
+    private Color parseColor(String colorValue, Color fallbackColor) {
+        try {
+            return Color.web(colorValue);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            System.err.println("Invalid scene color '" + colorValue + "'. Using fallback color.");
+            return fallbackColor;
+        }
     }
 
     public BorderPane getRoot() {
@@ -308,15 +317,14 @@ public class SimulationView {
         hudView.setCommandHelpVisible(visible);
     }
     
-    public void updateCommandHelp(fr.enac.drone.controller.DroneController.InputDevice device, String layout) {
+    public void updateCommandHelp(InputDevice device, KeyboardLayout layout) {
         hudView.updateCommandHelp(device, layout);
     }
 
     /**
-     * Returns a copy of the recorded flight trail points.
-     * Each element is a double[] {x, z} in world coordinates.
+     * Returns a copy of the recorded flight trail points in world coordinates.
      */
-    public List<double[]> getTrail() {
+    public List<WorldPosition2D> getTrail() {
         return hudView.getTrail();
     }
 
@@ -331,7 +339,7 @@ public class SimulationView {
      * Registers a callback to be invoked when the user clicks on the minimap.
      * The callback receives the world {x, z} coordinates of the clicked point.
      */
-    public void setMinimapTargetHandler(Consumer<double[]> handler) {
+    public void setMinimapTargetHandler(Consumer<WorldPosition2D> handler) {
         hudView.setOnMinimapTargetClicked(handler);
     }
 
@@ -355,7 +363,7 @@ public class SimulationView {
         settingsView.setOnCommandHelpVisibilityChanged(handler);
     }
     
-    public void setKeyboardLayoutHandler(Consumer<String> handler) {
+    public void setKeyboardLayoutHandler(Consumer<KeyboardLayout> handler) {
         settingsView.setOnKeyboardLayoutChanged(handler);
     }
 }

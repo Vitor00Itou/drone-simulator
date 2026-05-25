@@ -1,13 +1,15 @@
 package fr.enac.drone.model.world;
 
-import javafx.scene.paint.Color;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.Objects;
 
 /**
  * Represents a single object inside the world configuration.
  */
 public class WorldObject {
     private String name;
-    private String type; // "box", "cylinder", "plane"
+    private WorldObjectType type;
     private double posX;
     private double posY;
     private double posZ;
@@ -20,6 +22,11 @@ public class WorldObject {
     public WorldObject() {}
 
     public WorldObject(String name, String type, double posX, double posY, double posZ,
+                       double sizeX, double sizeY, double sizeZ, String color) {
+        this(name, WorldObjectType.fromSerializedName(type), posX, posY, posZ, sizeX, sizeY, sizeZ, color);
+    }
+
+    public WorldObject(String name, WorldObjectType type, double posX, double posY, double posZ,
                        double sizeX, double sizeY, double sizeZ, String color) {
         setName(name);
         setType(type);
@@ -43,19 +50,12 @@ public class WorldObject {
         this.name = name;
     }
 
-    public String getType() {
+    public WorldObjectType getType() {
         return type;
     }
 
-    public void setType(String type) {
-        if (type == null || type.trim().isEmpty()) {
-            throw new IllegalArgumentException("Object type cannot be null or empty");
-        }
-        String lowerType = type.toLowerCase();
-        if (!lowerType.matches("box|cylinder|plane")) {
-            throw new IllegalArgumentException("Invalid object type: " + type + ". Must be box, cylinder, or plane");
-        }
-        this.type = lowerType;
+    public void setType(WorldObjectType type) {
+        this.type = Objects.requireNonNull(type, "Object type cannot be null");
     }
 
     public double getPosX() {
@@ -123,8 +123,7 @@ public class WorldObject {
         if (color == null || color.trim().isEmpty()) {
             throw new IllegalArgumentException("Color cannot be null or empty");
         }
-        validateColor(color);
-        this.color = color;
+        this.color = color.trim();
     }
 
     public String getTexture() {
@@ -133,14 +132,6 @@ public class WorldObject {
 
     public void setTexture(String texture) {
         this.texture = normalizeTexture(texture);
-    }
-
-    private void validateColor(String color) {
-        try {
-            Color.web(color);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid color format: " + color, e);
-        }
     }
 
     private String normalizeTexture(String texture) {
@@ -168,8 +159,62 @@ public class WorldObject {
         return normalizedTexture;
     }
 
-    public String getTypeCaseSensitive() {
-        return type;
+    @JsonIgnore
+    public boolean isBox() {
+        return type == WorldObjectType.BOX;
+    }
+
+    @JsonIgnore
+    public boolean isCylinder() {
+        return type == WorldObjectType.CYLINDER;
+    }
+
+    @JsonIgnore
+    public boolean isPlane() {
+        return type == WorldObjectType.PLANE;
+    }
+
+    @JsonIgnore
+    public boolean isSolidObstacle() {
+        return !isPlane();
+    }
+
+    @JsonIgnore
+    public double getTopY() {
+        return posY - sizeY / 2.0;
+    }
+
+    @JsonIgnore
+    public double getBottomY() {
+        return posY + sizeY / 2.0;
+    }
+
+    @JsonIgnore
+    public double getHalfWidth() {
+        return sizeX / 2.0;
+    }
+
+    @JsonIgnore
+    public double getHalfDepth() {
+        return sizeZ / 2.0;
+    }
+
+    @JsonIgnore
+    public double getRadius() {
+        if (!isCylinder()) {
+            throw new IllegalStateException("Only cylindrical objects expose a radius");
+        }
+        return sizeX;
+    }
+
+    @JsonIgnore
+    public double getFootprintHalfWidth() {
+        return isCylinder() ? getRadius() : getHalfWidth();
+    }
+
+    @JsonIgnore
+    public double getFootprintHalfDepth() {
+        return isCylinder() ? getRadius() : getHalfDepth();
     }
 
     @Override

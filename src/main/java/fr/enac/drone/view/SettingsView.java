@@ -1,10 +1,14 @@
 package fr.enac.drone.view;
 
-import fr.enac.drone.model.WorldMode;
+import fr.enac.drone.input.KeyboardLayout;
 import fr.enac.drone.model.drone.DroneControlSettings;
 import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.world.WorldConfiguration;
-import fr.enac.drone.model.world.WorldPersistence;
+import fr.enac.drone.model.world.WorldGenerationMode;
+import fr.enac.drone.persistence.WorldPersistence;
+import fr.enac.drone.view.settings.SettingsSection;
+import fr.enac.drone.view.settings.SettingsState;
+import fr.enac.drone.view.settings.SettingsWorldSource;
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -62,79 +66,11 @@ public class SettingsView extends StackPane {
     private static final double VERTICAL_SPEED_MIN = DroneControlSettings.MAX_VERTICAL_SPEED.getMin();
     private static final double VERTICAL_SPEED_MAX = DroneControlSettings.MAX_VERTICAL_SPEED.getMax();
 
-    public enum Section {
-        DRONE,
-        WORLD,
-        CONTROLS
-    }
-
-    private enum WorldSource {
-        PREDEFINED,
-        RANDOM
-    }
-
-    public static class State {
-        private Section activeSection = Section.DRONE;
-        private WorldSource worldSource = WorldSource.PREDEFINED;
-        private String selectedWorldFilename;
-        private WorldMode selectedWorldMode = WorldMode.MEDIUM_OBSTACLES;
-        private boolean showCommandHelp = true;
-        private String keyboardLayout = "QWERTY";
-
-        public Section getActiveSection() {
-            return activeSection;
-        }
-
-        private void setActiveSection(Section activeSection) {
-            this.activeSection = Objects.requireNonNull(activeSection);
-        }
-
-        private WorldSource getWorldSource() {
-            return worldSource;
-        }
-
-        private void setWorldSource(WorldSource worldSource) {
-            this.worldSource = Objects.requireNonNull(worldSource);
-        }
-
-        public void setSelectedWorldFilename(String selectedWorldFilename) {
-            this.selectedWorldFilename = selectedWorldFilename;
-        }
-
-        private String getSelectedWorldFilename() {
-            return selectedWorldFilename;
-        }
-
-        private WorldMode getSelectedWorldMode() {
-            return selectedWorldMode;
-        }
-
-        private void setSelectedWorldMode(WorldMode selectedWorldMode) {
-            this.selectedWorldMode = Objects.requireNonNull(selectedWorldMode);
-        }
-        
-        public boolean isShowCommandHelp() {
-            return showCommandHelp;
-        }
-        
-        public void setShowCommandHelp(boolean showCommandHelp) {
-            this.showCommandHelp = showCommandHelp;
-        }
-        
-        public String getKeyboardLayout() {
-            return keyboardLayout;
-        }
-        
-        public void setKeyboardLayout(String keyboardLayout) {
-            this.keyboardLayout = keyboardLayout;
-        }
-    }
-
     private final DroneModel model;
     private final WorldConfiguration currentConfig;
     private final String currentConfigFilename;
     private final BiConsumer<WorldConfiguration, String> onWorldApplied;
-    private final State state;
+    private final SettingsState state;
     private final Region clickOutsideLayer;
     private final VBox drawer;
     private final Button settingsButton;
@@ -144,14 +80,14 @@ public class SettingsView extends StackPane {
     private boolean open;
     private TranslateTransition transition;
     private Consumer<Boolean> onCommandHelpVisibilityChanged;
-    private Consumer<String> onKeyboardLayoutChanged;
+    private Consumer<KeyboardLayout> onKeyboardLayoutChanged;
 
     public SettingsView(
             DroneModel model,
             WorldConfiguration currentConfig,
             String currentConfigFilename,
             BiConsumer<WorldConfiguration, String> onWorldApplied,
-            State state
+            SettingsState state
     ) {
         this.model = Objects.requireNonNull(model, "Model cannot be null");
         this.currentConfig = Objects.requireNonNull(currentConfig, "World configuration cannot be null");
@@ -187,7 +123,7 @@ public class SettingsView extends StackPane {
         this.onCommandHelpVisibilityChanged = handler;
     }
     
-    public void setOnKeyboardLayoutChanged(Consumer<String> handler) {
+    public void setOnKeyboardLayoutChanged(Consumer<KeyboardLayout> handler) {
         this.onKeyboardLayoutChanged = handler;
     }
 
@@ -332,19 +268,19 @@ public class SettingsView extends StackPane {
 
         droneButton.setOnAction(event -> {
             if (droneButton.isSelected()) {
-                state.setActiveSection(Section.DRONE);
+                state.setActiveSection(SettingsSection.DRONE);
                 showSettingsContent(contentHost, droneContent);
             }
         });
         worldButton.setOnAction(event -> {
             if (worldButton.isSelected()) {
-                state.setActiveSection(Section.WORLD);
+                state.setActiveSection(SettingsSection.WORLD);
                 showSettingsContent(contentHost, worldContent);
             }
         });
         controlsButton.setOnAction(event -> {
             if (controlsButton.isSelected()) {
-                state.setActiveSection(Section.CONTROLS);
+                state.setActiveSection(SettingsSection.CONTROLS);
                 showSettingsContent(contentHost, controlsContent);
             }
         });
@@ -354,10 +290,10 @@ public class SettingsView extends StackPane {
             }
         });
 
-        if (state.getActiveSection() == Section.WORLD) {
+        if (state.getActiveSection() == SettingsSection.WORLD) {
             worldButton.setSelected(true);
             showSettingsContent(contentHost, worldContent);
-        } else if (state.getActiveSection() == Section.CONTROLS) {
+        } else if (state.getActiveSection() == SettingsSection.CONTROLS) {
             controlsButton.setSelected(true);
             showSettingsContent(contentHost, controlsContent);
         } else {
@@ -555,9 +491,9 @@ public class SettingsView extends StackPane {
         styleRadioButton(randomRadio);
 
         ToggleGroup densityGroup = new ToggleGroup();
-        ToggleButton lightweight = createDensityButton("Lightweight", WorldMode.FEW_OBSTACLES, densityGroup);
-        ToggleButton balanced = createDensityButton("Balanced", WorldMode.MEDIUM_OBSTACLES, densityGroup);
-        ToggleButton dense = createDensityButton("Dense", WorldMode.MANY_OBSTACLES, densityGroup);
+        ToggleButton lightweight = createDensityButton("Lightweight", WorldGenerationMode.FEW_OBSTACLES, densityGroup);
+        ToggleButton balanced = createDensityButton("Balanced", WorldGenerationMode.MEDIUM_OBSTACLES, densityGroup);
+        ToggleButton dense = createDensityButton("Dense", WorldGenerationMode.MANY_OBSTACLES, densityGroup);
         selectDensity(densityGroup);
 
         HBox densityButtons = new HBox(6, lightweight, balanced, dense);
@@ -584,7 +520,7 @@ public class SettingsView extends StackPane {
                         + "-fx-cursor: hand;"
         );
 
-        if (state.getWorldSource() == WorldSource.RANDOM) {
+        if (state.getWorldSource() == SettingsWorldSource.RANDOM) {
             randomRadio.setSelected(true);
         } else {
             predefinedRadio.setSelected(true);
@@ -596,7 +532,7 @@ public class SettingsView extends StackPane {
                 return;
             }
 
-            state.setWorldSource(predefinedRadio.isSelected() ? WorldSource.PREDEFINED : WorldSource.RANDOM);
+            state.setWorldSource(predefinedRadio.isSelected() ? SettingsWorldSource.PREDEFINED : SettingsWorldSource.RANDOM);
             updateWorldSourceControls(predefinedRadio, configsCombo, densityButtons);
         });
         densityGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
@@ -606,7 +542,7 @@ public class SettingsView extends StackPane {
             }
 
             if (newValue != null) {
-                state.setSelectedWorldMode((WorldMode) newValue.getUserData());
+                state.setSelectedWorldMode((WorldGenerationMode) newValue.getUserData());
             }
         });
         updateWorldSourceControls(predefinedRadio, configsCombo, densityButtons);
@@ -654,20 +590,20 @@ public class SettingsView extends StackPane {
         visibilityBox.setPadding(new Insets(0, 0, 0, 2));
 
         ToggleGroup layoutGroup = new ToggleGroup();
-        RadioButton qwertyRadio = new RadioButton("QWERTY");
+        RadioButton qwertyRadio = new RadioButton(KeyboardLayout.QWERTY.name());
         styleRadioButton(qwertyRadio);
         qwertyRadio.setToggleGroup(layoutGroup);
 
-        RadioButton azertyRadio = new RadioButton("AZERTY");
+        RadioButton azertyRadio = new RadioButton(KeyboardLayout.AZERTY.name());
         styleRadioButton(azertyRadio);
         azertyRadio.setToggleGroup(layoutGroup);
 
-        if ("AZERTY".equals(state.getKeyboardLayout())) azertyRadio.setSelected(true);
+        if (state.getKeyboardLayout() == KeyboardLayout.AZERTY) azertyRadio.setSelected(true);
         else qwertyRadio.setSelected(true);
 
         layoutGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null) { oldVal.setSelected(true); return; }
-            String layout = qwertyRadio.isSelected() ? "QWERTY" : "AZERTY";
+            KeyboardLayout layout = qwertyRadio.isSelected() ? KeyboardLayout.QWERTY : KeyboardLayout.AZERTY;
             state.setKeyboardLayout(layout);
             if (onKeyboardLayoutChanged != null) onKeyboardLayoutChanged.accept(layout);
         });
@@ -711,7 +647,7 @@ public class SettingsView extends StackPane {
 
     private ToggleButton createDensityButton(
             String text,
-            WorldMode mode,
+            WorldGenerationMode mode,
             ToggleGroup densityGroup
     ) {
         ToggleButton button = new ToggleButton(text);
@@ -870,7 +806,7 @@ public class SettingsView extends StackPane {
             return;
         }
 
-        WorldMode selectedMode = (WorldMode) densityGroup.getSelectedToggle().getUserData();
+        WorldGenerationMode selectedMode = (WorldGenerationMode) densityGroup.getSelectedToggle().getUserData();
         currentConfig.generateRandomObstacles(selectedMode.getObstacleCount());
         onWorldApplied.accept(currentConfig, currentConfigFilename);
     }

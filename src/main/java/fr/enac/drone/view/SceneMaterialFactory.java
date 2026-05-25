@@ -8,7 +8,6 @@ import javafx.scene.paint.PhongMaterial;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -62,7 +61,7 @@ final class SceneMaterialFactory {
 
         PhongMaterial material = createTexturedMaterial(
             object.getTexture(),
-            Color.web(object.getColor()),
+            parseColor(object.getColor(), Color.GRAY),
             getSpecularColor(object),
             getSpecularPower(object)
         );
@@ -78,7 +77,7 @@ final class SceneMaterialFactory {
             return cachedMaterial;
         }
 
-        Color diffuseColor = Color.web(object.getColor());
+        Color diffuseColor = parseColor(object.getColor(), Color.GRAY);
         PhongMaterial material = createMaterial(
             diffuseColor,
             getSpecularColor(object),
@@ -113,21 +112,28 @@ final class SceneMaterialFactory {
         return material;
     }
 
+    private Color parseColor(String colorValue, Color fallbackColor) {
+        try {
+            return Color.web(colorValue);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            System.err.println("Invalid color '" + colorValue + "'. Using fallback material color.");
+            return fallbackColor;
+        }
+    }
+
     private Color getSpecularColor(WorldObject object) {
-        return switch (object.getType().toLowerCase(Locale.ROOT)) {
-            case "cylinder" -> Color.web("#E2E8EC");
-            case "box" -> Color.web("#BFC5C0");
-            case "plane" -> Color.web("#1F2A1F");
-            default -> Color.web("#303030");
+        return switch (object.getType()) {
+            case CYLINDER -> Color.web("#E2E8EC");
+            case BOX -> Color.web("#BFC5C0");
+            case PLANE -> Color.web("#1F2A1F");
         };
     }
 
     private double getSpecularPower(WorldObject object) {
-        return switch (object.getType().toLowerCase(Locale.ROOT)) {
-            case "cylinder" -> 48.0;
-            case "box" -> 16.0;
-            case "plane" -> 4.0;
-            default -> 8.0;
+        return switch (object.getType()) {
+            case CYLINDER -> 48.0;
+            case BOX -> 16.0;
+            case PLANE -> 4.0;
         };
     }
 

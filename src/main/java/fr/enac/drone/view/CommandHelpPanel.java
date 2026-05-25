@@ -1,6 +1,7 @@
 package fr.enac.drone.view;
 
-import fr.enac.drone.controller.DroneController.InputDevice;
+import fr.enac.drone.input.InputDevice;
+import fr.enac.drone.input.KeyboardLayout;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -31,10 +32,10 @@ public class CommandHelpPanel extends VBox {
         )));
         setEffect(new DropShadow(12, Color.rgb(0, 0, 0, 0.28)));
 
-        updateHelpText(InputDevice.KEYBOARD, "QWERTY");
+        updateHelpText(InputDevice.KEYBOARD, KeyboardLayout.QWERTY);
     }
     
-    public void updateHelpText(InputDevice device, String layout) {
+    public void updateHelpText(InputDevice device, KeyboardLayout layout) {
         getChildren().clear();
         
         if (device == InputDevice.JOYSTICK) {
@@ -52,16 +53,14 @@ public class CommandHelpPanel extends VBox {
                     createCommandRow("LB / RB",       "Zoom Minimap")
             );
         } else {
-            String leftKey = "AZERTY".equals(layout) ? "Q" : "A";
-            String forwardKey = "AZERTY".equals(layout) ? "Z" : "W";
             getChildren().addAll(
                     createCommandRow("Space / Enter", "Start / Pause / Resume"),
                     createCommandRow("R",             "Reset simulation"),
                     createCommandRow("O",             "Takeoff / Arm"),
                     createCommandRow("L",             "Land"),
                     createCommandRow("F",             "Emergency Stop"),
-                    createCommandRow(forwardKey + " / S", "Altitude"),
-                    createCommandRow(leftKey + " / D", "Heading"),
+                    createCommandRow(layout.getVerticalUpLabel() + " / S", "Altitude"),
+                    createCommandRow(layout.getYawLeftLabel() + " / D", "Heading"),
                     createCommandRow("Up / Down",     "Forward / Backward"),
                     createCommandRow("Left / Right",  "Lateral Movement"),
                     createCommandRow("H",             "Return to Home")

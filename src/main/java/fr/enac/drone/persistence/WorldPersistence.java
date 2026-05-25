@@ -1,18 +1,23 @@
-package fr.enac.drone.model.world;
+package fr.enac.drone.persistence;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.enac.drone.model.world.WorldConfiguration;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles saving and loading world state to/from JSON files.
  */
 public class WorldPersistence {
+    private static final Logger LOGGER = Logger.getLogger(WorldPersistence.class.getName());
     private static final ObjectMapper objectMapper = new ObjectMapper()
         .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     private static final Path SAVES_DIRECTORY = Paths.get("saves");
@@ -21,7 +26,7 @@ public class WorldPersistence {
         try {
             Files.createDirectories(SAVES_DIRECTORY);
         } catch (IOException e) {
-            System.err.println("Failed to create saves directory: " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Failed to create saves directory", e);
         }
     }
 
@@ -59,7 +64,7 @@ public class WorldPersistence {
         
         Path filepath = SAVES_DIRECTORY.resolve(filename + ".json");
         objectMapper.writerWithDefaultPrettyPrinter().writeValue(filepath.toFile(), config);
-        System.out.println("World configuration saved to: " + filepath);
+        LOGGER.fine(() -> "World configuration saved to: " + filepath);
     }
 
     /**
@@ -76,7 +81,7 @@ public class WorldPersistence {
         File file = filepath.toFile();
         
         if (!file.exists()) {
-            System.err.println("World configuration file not found: " + filepath);
+            LOGGER.fine(() -> "World configuration file not found: " + filepath);
             return null;
         }
         
@@ -84,7 +89,7 @@ public class WorldPersistence {
         
         config.updateSpawnBase();
         
-        System.out.println("World configuration loaded from: " + filepath);
+        LOGGER.fine(() -> "World configuration loaded from: " + filepath);
         return config;
     }
 
@@ -120,7 +125,7 @@ public class WorldPersistence {
         try {
             return Files.deleteIfExists(filepath);
         } catch (IOException e) {
-            System.err.println("Failed to delete save: " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Failed to delete save: " + filepath, e);
             return false;
         }
     }

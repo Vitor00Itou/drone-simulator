@@ -87,7 +87,7 @@ public class WorldConfiguration {
         double baseRadius = 20.0;
 
         WorldObject spawnBase = new WorldObject(
-                "Spawn Base", "cylinder", this.droneSpawn.getPosX(), baseY, this.droneSpawn.getPosZ(),
+                "Spawn Base", WorldObjectType.CYLINDER, this.droneSpawn.getPosX(), baseY, this.droneSpawn.getPosZ(),
                 baseRadius, baseHeight, baseRadius, "#A9A9A9"
         );
         this.objects.add(spawnBase);
@@ -98,7 +98,7 @@ public class WorldConfiguration {
 
         // Keep the ground plane and spawn base, but remove other objects
         for (WorldObject object : objects) {
-            if ("plane".equals(object.getType()) || "Spawn Base".equals(object.getName())) {
+            if (object.isPlane() || "Spawn Base".equals(object.getName())) {
                 newObjects.add(object);
             }
         }
@@ -127,7 +127,7 @@ public class WorldConfiguration {
 
             newObjects.add(new WorldObject(
                     "Obstacle " + (i + 1),
-                    "cylinder",
+                    WorldObjectType.CYLINDER,
                     x,
                     y,
                     z,
@@ -146,13 +146,13 @@ public class WorldConfiguration {
         
         // Ground plane (always present)
         WorldObject ground = new WorldObject(
-            "Ground", "plane", 0, 0, 0, 5000, 1, 5000, "#228B22"
+            "Ground", WorldObjectType.PLANE, 0, 0, 0, 5000, 1, 5000, "#228B22"
         );
         defaultObjects.add(ground);
         
         // Reference tower
         WorldObject referenceTower = new WorldObject(
-            "Reference Tower", "cylinder", 150, -70, 500, 30, 200, 30, "#FFA500"
+            "Reference Tower", WorldObjectType.CYLINDER, 150, -70, 500, 30, 200, 30, "#FFA500"
         );
         defaultObjects.add(referenceTower);
         
