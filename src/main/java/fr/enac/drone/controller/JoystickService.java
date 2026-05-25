@@ -17,8 +17,13 @@ public class JoystickService {
     private double pitch = 0;
     private double roll = 0;
     private boolean armPressed = false;
-    private boolean disarmPressed = false;
     private boolean homePressed = false;
+    private boolean landPressed = false;
+    private boolean emergencyPressed = false;
+    private boolean pausePressed = false;
+    private boolean pauseWasPressed = false;
+    private boolean resetPressed = false;
+    private boolean resetWasPressed = false;
     private double zoomInput = 0.0;
 
     public JoystickService() {
@@ -61,6 +66,9 @@ public class JoystickService {
         controllers.update();
         ControllerState state = controllers.getState(0); // Get the first controller (index 0)
 
+        pauseWasPressed = pausePressed;
+        resetWasPressed = resetPressed;
+
         if (state.isConnected) {
             // Mode 2 - Add 10% (0.1) deadzone for loose axes
             throttle = applyDeadzone(state.leftStickY, 0.1);
@@ -68,9 +76,12 @@ public class JoystickService {
             pitch    = applyDeadzone(-state.rightStickY, 0.1); // Inverted for correct Forward/Backward mapping
             roll     = applyDeadzone(state.rightStickX, 0.1);
             
-            armPressed = state.a || state.start;
-            disarmPressed = state.b || state.back;
-            homePressed = state.guide;
+            armPressed = state.a;
+            landPressed = state.x;
+            emergencyPressed = state.b;
+            homePressed = state.y;
+            pausePressed = state.start;
+            resetPressed = state.back;
             
             zoomInput = 0;
             // Right side (RB/RT): Zoom In (Decrease Radius)
@@ -81,7 +92,8 @@ public class JoystickService {
             zoomInput = Math.max(-1.0, Math.min(1.0, zoomInput));
         } else {
             throttle = yaw = pitch = roll = zoomInput = 0.0;
-            armPressed = disarmPressed = homePressed = false;
+            armPressed = homePressed = landPressed = emergencyPressed = false;
+            pausePressed = resetPressed = false;
         }
     }
 
@@ -99,7 +111,17 @@ public class JoystickService {
     public double getPitch() { return pitch; }
     public double getRoll() { return roll; }
     public boolean isArmPressed() { return armPressed; }
-    public boolean isDisarmPressed() { return disarmPressed; }
     public boolean isHomePressed() { return homePressed; }
+    public boolean isLandPressed() { return landPressed; }
+    public boolean isEmergencyPressed() { return emergencyPressed; }
+    public boolean isPauseJustPressed() { return pausePressed && !pauseWasPressed; }
+    public boolean isResetJustPressed() { return resetPressed && !resetWasPressed; }
     public double getZoomInput() { return zoomInput; }
+    
+    public boolean hasAnyInput() {
+        return Math.abs(throttle) > 0 || Math.abs(yaw) > 0 || Math.abs(pitch) > 0 || Math.abs(roll) > 0
+                || armPressed || homePressed || landPressed || emergencyPressed
+                || pausePressed || resetPressed
+                || Math.abs(zoomInput) > 0;
+    }
 }

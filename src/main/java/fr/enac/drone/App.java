@@ -48,6 +48,8 @@ public class App extends Application {
     private double minimapZoom = 1000.0;
     private final SettingsView.State settingsState = new SettingsView.State();
 
+    private DroneController.InputDevice currentInputDevice = DroneController.InputDevice.KEYBOARD;
+
     private DroneModel model;
     private DroneController controller;
     private SimulationView view;
@@ -167,6 +169,8 @@ public class App extends Application {
         );
 
         controller = new DroneController(model, collisionDetector);
+        controller.setKeyboardLayout(settingsState.getKeyboardLayout());
+
         view = new SimulationView(
                 model,
                 worldConfig,
@@ -177,6 +181,18 @@ public class App extends Application {
         view.setSimulationState(simulationState);
         view.clearTrail();
         view.setMinimapZoom(minimapZoom);
+        view.setCommandHelpVisible(settingsState.isShowCommandHelp());
+        view.updateCommandHelp(currentInputDevice, settingsState.getKeyboardLayout());
+        
+        view.setCommandHelpVisibilityHandler(visible -> {
+            view.setCommandHelpVisible(visible);
+        });
+        view.setKeyboardLayoutHandler(layout -> {
+            if (controller != null) {
+                controller.setKeyboardLayout(layout);
+            }
+            view.updateCommandHelp(currentInputDevice, layout);
+        });
 
         root.setCenter(view.getRoot());
     }
@@ -328,9 +344,23 @@ public class App extends Application {
                     view.adjustMinimapZoom(zoomInput * 2000.0 * deltaTime);
                 }
 
+                if (controller.isPauseJustPressed()) {
+                    toggleStartPauseResume();
+                }
+
+                if (controller.isResetJustPressed()) {
+                    resetSimulationSession();
+                }
+
                 if (simulationState == SimulationState.READY
                         && controller.hasJoystickFlightStartInput()) {
                     setSimulationState(SimulationState.RUNNING);
+                }
+
+                DroneController.InputDevice newDevice = controller.getLastUsedDevice();
+                if (newDevice != currentInputDevice) {
+                    currentInputDevice = newDevice;
+                    view.updateCommandHelp(currentInputDevice, settingsState.getKeyboardLayout());
                 }
 
                 if (simulationState == SimulationState.RUNNING) {

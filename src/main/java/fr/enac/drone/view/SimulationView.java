@@ -303,6 +303,14 @@ public class SimulationView {
     public void setMinimapZoom(double zoom) {
         hudView.setMinimapZoom(zoom);
     }
+    
+    public void setCommandHelpVisible(boolean visible) {
+        hudView.setCommandHelpVisible(visible);
+    }
+    
+    public void updateCommandHelp(fr.enac.drone.controller.DroneController.InputDevice device, String layout) {
+        hudView.updateCommandHelp(device, layout);
+    }
 
     /**
      * Returns a copy of the recorded flight trail points.
@@ -341,5 +349,13 @@ public class SimulationView {
 
     public void setSettingsDrawerClosedHandler(Runnable handler) {
         settingsView.setOnClosed(handler);
+    }
+    
+    public void setCommandHelpVisibilityHandler(Consumer<Boolean> handler) {
+        settingsView.setOnCommandHelpVisibilityChanged(handler);
+    }
+    
+    public void setKeyboardLayoutHandler(Consumer<String> handler) {
+        settingsView.setOnKeyboardLayoutChanged(handler);
     }
 }

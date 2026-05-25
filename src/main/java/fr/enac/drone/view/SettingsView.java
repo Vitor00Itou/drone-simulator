@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Overlay settings drawer for session-level drone and world configuration.
@@ -63,7 +64,8 @@ public class SettingsView extends StackPane {
 
     public enum Section {
         DRONE,
-        WORLD
+        WORLD,
+        CONTROLS
     }
 
     private enum WorldSource {
@@ -76,6 +78,8 @@ public class SettingsView extends StackPane {
         private WorldSource worldSource = WorldSource.PREDEFINED;
         private String selectedWorldFilename;
         private WorldMode selectedWorldMode = WorldMode.MEDIUM_OBSTACLES;
+        private boolean showCommandHelp = true;
+        private String keyboardLayout = "QWERTY";
 
         public Section getActiveSection() {
             return activeSection;
@@ -108,6 +112,22 @@ public class SettingsView extends StackPane {
         private void setSelectedWorldMode(WorldMode selectedWorldMode) {
             this.selectedWorldMode = Objects.requireNonNull(selectedWorldMode);
         }
+        
+        public boolean isShowCommandHelp() {
+            return showCommandHelp;
+        }
+        
+        public void setShowCommandHelp(boolean showCommandHelp) {
+            this.showCommandHelp = showCommandHelp;
+        }
+        
+        public String getKeyboardLayout() {
+            return keyboardLayout;
+        }
+        
+        public void setKeyboardLayout(String keyboardLayout) {
+            this.keyboardLayout = keyboardLayout;
+        }
     }
 
     private final DroneModel model;
@@ -123,6 +143,8 @@ public class SettingsView extends StackPane {
     private Runnable onClosed;
     private boolean open;
     private TranslateTransition transition;
+    private Consumer<Boolean> onCommandHelpVisibilityChanged;
+    private Consumer<String> onKeyboardLayoutChanged;
 
     public SettingsView(
             DroneModel model,
@@ -159,6 +181,14 @@ public class SettingsView extends StackPane {
 
     public void setOnClosed(Runnable onClosed) {
         this.onClosed = onClosed;
+    }
+    
+    public void setOnCommandHelpVisibilityChanged(Consumer<Boolean> handler) {
+        this.onCommandHelpVisibilityChanged = handler;
+    }
+    
+    public void setOnKeyboardLayoutChanged(Consumer<String> handler) {
+        this.onKeyboardLayoutChanged = handler;
     }
 
     public boolean isOpen() {
@@ -293,10 +323,12 @@ public class SettingsView extends StackPane {
     private VBox createSettingsTabs(StackPane contentHost) {
         VBox droneContent = createDroneContent();
         VBox worldContent = createWorldContent();
+        VBox controlsContent = createControlsContent();
 
         ToggleGroup tabGroup = new ToggleGroup();
         ToggleButton droneButton = createSettingsTabButton("Drone", tabGroup);
         ToggleButton worldButton = createSettingsTabButton("World", tabGroup);
+        ToggleButton controlsButton = createSettingsTabButton("Controls", tabGroup);
 
         droneButton.setOnAction(event -> {
             if (droneButton.isSelected()) {
@@ -310,6 +342,12 @@ public class SettingsView extends StackPane {
                 showSettingsContent(contentHost, worldContent);
             }
         });
+        controlsButton.setOnAction(event -> {
+            if (controlsButton.isSelected()) {
+                state.setActiveSection(Section.CONTROLS);
+                showSettingsContent(contentHost, controlsContent);
+            }
+        });
         tabGroup.selectedToggleProperty().addListener((observable, oldToggle, newToggle) -> {
             if (newToggle == null && oldToggle != null) {
                 oldToggle.setSelected(true);
@@ -319,15 +357,19 @@ public class SettingsView extends StackPane {
         if (state.getActiveSection() == Section.WORLD) {
             worldButton.setSelected(true);
             showSettingsContent(contentHost, worldContent);
+        } else if (state.getActiveSection() == Section.CONTROLS) {
+            controlsButton.setSelected(true);
+            showSettingsContent(contentHost, controlsContent);
         } else {
             droneButton.setSelected(true);
             showSettingsContent(contentHost, droneContent);
         }
 
-        HBox tabButtons = new HBox(6, droneButton, worldButton);
+        HBox tabButtons = new HBox(6, droneButton, worldButton, controlsButton);
         tabButtons.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(droneButton, Priority.ALWAYS);
         HBox.setHgrow(worldButton, Priority.ALWAYS);
+        HBox.setHgrow(controlsButton, Priority.ALWAYS);
 
         VBox tabs = new VBox(12, tabButtons, contentHost);
         tabs.setMaxWidth(Double.MAX_VALUE);
@@ -580,6 +622,61 @@ public class SettingsView extends StackPane {
                 applyButton
         );
 
+        return content;
+    }
+    
+    private VBox createControlsContent() {
+        VBox content = new VBox(18);
+        content.setPadding(new Insets(18, 4, 8, 4));
+
+        Label heading = new Label("Controls & HUD");
+        heading.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + HUD_TEXT + ";");
+
+        ToggleGroup visibilityGroup = new ToggleGroup();
+        RadioButton visibleRadio = new RadioButton("Visible");
+        styleRadioButton(visibleRadio);
+        visibleRadio.setToggleGroup(visibilityGroup);
+
+        RadioButton hiddenRadio = new RadioButton("Hidden");
+        styleRadioButton(hiddenRadio);
+        hiddenRadio.setToggleGroup(visibilityGroup);
+
+        if (state.isShowCommandHelp()) visibleRadio.setSelected(true);
+        else hiddenRadio.setSelected(true);
+
+        visibilityGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null) { oldVal.setSelected(true); return; }
+            boolean visible = visibleRadio.isSelected();
+            state.setShowCommandHelp(visible);
+            if (onCommandHelpVisibilityChanged != null) onCommandHelpVisibilityChanged.accept(visible);
+        });
+        VBox visibilityBox = new VBox(8, visibleRadio, hiddenRadio);
+        visibilityBox.setPadding(new Insets(0, 0, 0, 2));
+
+        ToggleGroup layoutGroup = new ToggleGroup();
+        RadioButton qwertyRadio = new RadioButton("QWERTY");
+        styleRadioButton(qwertyRadio);
+        qwertyRadio.setToggleGroup(layoutGroup);
+
+        RadioButton azertyRadio = new RadioButton("AZERTY");
+        styleRadioButton(azertyRadio);
+        azertyRadio.setToggleGroup(layoutGroup);
+
+        if ("AZERTY".equals(state.getKeyboardLayout())) azertyRadio.setSelected(true);
+        else qwertyRadio.setSelected(true);
+
+        layoutGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null) { oldVal.setSelected(true); return; }
+            String layout = qwertyRadio.isSelected() ? "QWERTY" : "AZERTY";
+            state.setKeyboardLayout(layout);
+            if (onKeyboardLayoutChanged != null) onKeyboardLayoutChanged.accept(layout);
+        });
+        VBox layoutBox = new VBox(8, qwertyRadio, azertyRadio);
+        layoutBox.setPadding(new Insets(0, 0, 0, 2));
+
+        content.getChildren().addAll(
+                heading, createFieldLabel("On-Screen Command Help"), visibilityBox,
+                createFieldLabel("Keyboard Layout"), layoutBox);
         return content;
     }
 
