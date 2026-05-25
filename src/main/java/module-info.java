@@ -1,3 +1,6 @@
+/**
+ * Java module definition for the FPV drone simulator application.
+ */
 @SuppressWarnings("module")
 module fr.enac.drone {
     requires javafx.controls;

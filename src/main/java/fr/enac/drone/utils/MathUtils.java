@@ -1,12 +1,21 @@
 package fr.enac.drone.utils;
 
 /**
- * Utility class for common mathematical operations.
+ * Provides common mathematical helpers used by simulation and navigation code.
  */
 public class MathUtils {
+
+    /**
+     * Creates a math helper instance.
+     */
+    public MathUtils() {
+    }
     
     /**
-     * Normalizes an angle to be strictly between 0 and 359 degrees.
+     * Normalizes a heading angle to the range {@code [0, 360)} degrees.
+     *
+     * @param angleDegrees angle in degrees, positive or negative
+     * @return equivalent heading in the range {@code [0, 360)}
      */
     public static double normalizeHeading(double angleDegrees) {
         double normalized = angleDegrees % 360;
@@ -14,7 +23,13 @@ public class MathUtils {
     }
 
     /**
-     * Calculates the 2D Euclidean distance between two points (Pythagorean theorem).
+     * Calculates the Euclidean distance between two points on the world X/Z plane.
+     *
+     * @param x1 first point X coordinate
+     * @param z1 first point Z coordinate
+     * @param x2 second point X coordinate
+     * @param z2 second point Z coordinate
+     * @return distance between the two points
      */
     public static double distance2D(double x1, double z1, double x2, double z2) {
         double dx = x2 - x1;

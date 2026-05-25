@@ -54,6 +54,15 @@ public class SimulationView {
 
     private SimulationState simulationState = SimulationState.READY;
 
+    /**
+     * Creates the main simulation view, including 3D scene, HUD, and settings drawer.
+     *
+     * @param model drone model to render
+     * @param worldConfig world configuration to render
+     * @param currentWorldFilename active world filename without extension
+     * @param onWorldApplied callback invoked when settings apply a world change
+     * @param settingsState persisted settings drawer state
+     */
     public SimulationView(
             DroneModel model,
             WorldConfiguration worldConfig,
@@ -178,6 +187,9 @@ public class SimulationView {
 
     /**
      * Creates visual objects from world configuration.
+     *
+     * @param obj world object to convert into a JavaFX node
+     * @return visual node, or {@code null} when the type is unsupported
      */
     private Node createVisualObject(WorldObject obj) {
         Node node = null;
@@ -221,6 +233,12 @@ public class SimulationView {
         return node;
     }
 
+    /**
+     * Creates a tiled ground plane so large textured grounds repeat predictably.
+     *
+     * @param obj plane object to render
+     * @return group containing ground tiles
+     */
     private Group createGroundPlane(WorldObject obj) {
         Group ground = new Group();
         PhongMaterial groundMaterial = materialFactory.getMaterial(obj);
@@ -248,6 +266,13 @@ public class SimulationView {
         return ground;
     }
 
+    /**
+     * Parses a JavaFX scene color with a fallback.
+     *
+     * @param colorValue RGB hex value or JavaFX color name
+     * @param fallbackColor fallback color used when parsing fails
+     * @return parsed color or fallback color
+     */
     private Color parseColor(String colorValue, Color fallbackColor) {
         try {
             return Color.web(colorValue);
@@ -257,10 +282,20 @@ public class SimulationView {
         }
     }
 
+    /**
+     * Returns the root node for insertion into the JavaFX scene.
+     *
+     * @return root border pane
+     */
     public BorderPane getRoot() {
         return root;
     }
 
+    /**
+     * Sets the simulation lifecycle state displayed by the HUD.
+     *
+     * @param simulationState simulation lifecycle state
+     */
     public void setSimulationState(SimulationState simulationState) {
         this.simulationState =
                 Objects.requireNonNull(
@@ -301,28 +336,56 @@ public class SimulationView {
         hudView.clearMinimapTarget();
     }
     
+    /**
+     * Adjusts the minimap zoom radius.
+     *
+     * @param delta zoom radius delta in meters
+     */
     public void adjustMinimapZoom(double delta) {
         hudView.adjustMinimapZoom(delta);
     }
     
+    /**
+     * Returns the current minimap zoom radius.
+     *
+     * @return minimap zoom radius in meters
+     */
     public double getMinimapZoom() {
         return hudView.getMinimapZoom();
     }
     
+    /**
+     * Sets the minimap zoom radius.
+     *
+     * @param zoom zoom radius in meters
+     */
     public void setMinimapZoom(double zoom) {
         hudView.setMinimapZoom(zoom);
     }
     
+    /**
+     * Shows or hides the command help panel.
+     *
+     * @param visible {@code true} to show command help
+     */
     public void setCommandHelpVisible(boolean visible) {
         hudView.setCommandHelpVisible(visible);
     }
     
+    /**
+     * Refreshes command help labels for the active input configuration.
+     *
+     * @param device active input device
+     * @param layout active keyboard layout
+     */
     public void updateCommandHelp(InputDevice device, KeyboardLayout layout) {
         hudView.updateCommandHelp(device, layout);
     }
 
     /**
      * Returns a copy of the recorded flight trail points in world coordinates.
+     *
+     * @return flight trail points
      */
     public List<WorldPosition2D> getTrail() {
         return hudView.getTrail();
@@ -338,31 +401,61 @@ public class SimulationView {
     /**
      * Registers a callback to be invoked when the user clicks on the minimap.
      * The callback receives the world {x, z} coordinates of the clicked point.
+     *
+     * @param handler minimap target callback
      */
     public void setMinimapTargetHandler(Consumer<WorldPosition2D> handler) {
         hudView.setOnMinimapTargetClicked(handler);
     }
 
+    /**
+     * Returns whether the settings drawer is open or visible during transition.
+     *
+     * @return {@code true} when the settings drawer is open
+     */
     public boolean isSettingsDrawerOpen() {
         return settingsView.isOpen();
     }
 
+    /**
+     * Closes the settings drawer.
+     */
     public void closeSettingsDrawer() {
         settingsView.close();
     }
 
+    /**
+     * Registers a callback invoked after the settings drawer opens.
+     *
+     * @param handler callback to run on open
+     */
     public void setSettingsDrawerOpenedHandler(Runnable handler) {
         settingsView.setOnOpened(handler);
     }
 
+    /**
+     * Registers a callback invoked after the settings drawer closes.
+     *
+     * @param handler callback to run on close
+     */
     public void setSettingsDrawerClosedHandler(Runnable handler) {
         settingsView.setOnClosed(handler);
     }
     
+    /**
+     * Registers a callback for command help visibility changes.
+     *
+     * @param handler receives the new visibility flag
+     */
     public void setCommandHelpVisibilityHandler(Consumer<Boolean> handler) {
         settingsView.setOnCommandHelpVisibilityChanged(handler);
     }
     
+    /**
+     * Registers a callback for keyboard layout changes.
+     *
+     * @param handler receives the selected keyboard layout
+     */
     public void setKeyboardLayoutHandler(Consumer<KeyboardLayout> handler) {
         settingsView.setOnKeyboardLayoutChanged(handler);
     }

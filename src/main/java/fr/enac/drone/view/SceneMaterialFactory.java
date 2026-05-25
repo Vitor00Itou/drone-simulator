@@ -13,7 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Centralizes reusable JavaFX 3D materials for the simulation scene.
+ * Creates and caches reusable JavaFX 3D materials for the simulation scene.
  */
 final class SceneMaterialFactory {
     private static final String TEXTURE_ROOT = "/textures/";
@@ -24,6 +24,12 @@ final class SceneMaterialFactory {
     private final Map<String, Optional<Image>> textureImages = new HashMap<>();
     private PhongMaterial droneMaterial;
 
+    /**
+     * Returns a cached material for a world object.
+     *
+     * @param object world object to render
+     * @return material using the object's texture or fallback color
+     */
     PhongMaterial getMaterial(WorldObject object) {
         Objects.requireNonNull(object, "World object cannot be null");
 
@@ -34,12 +40,23 @@ final class SceneMaterialFactory {
         return createSolidObjectMaterial(object);
     }
 
+    /**
+     * Returns a cached texture image for a world object.
+     *
+     * @param object world object whose texture should be loaded
+     * @return texture image when configured and loadable
+     */
     Optional<Image> getTextureImage(WorldObject object) {
         Objects.requireNonNull(object, "World object cannot be null");
 
         return loadTexture(object.getTexture());
     }
 
+    /**
+     * Returns the shared material used for the drone body.
+     *
+     * @return drone material
+     */
     PhongMaterial createDroneMaterial() {
         if (droneMaterial == null) {
             droneMaterial = createMaterial(
@@ -52,6 +69,12 @@ final class SceneMaterialFactory {
         return droneMaterial;
     }
 
+    /**
+     * Creates or retrieves a material that uses a diffuse texture.
+     *
+     * @param object textured world object
+     * @return cached textured material
+     */
     private PhongMaterial createTexturedObjectMaterial(WorldObject object) {
         String key = object.getTexture() + "|" + object.getColor() + "|" + object.getType();
         PhongMaterial cachedMaterial = customTextureMaterials.get(key);
@@ -70,6 +93,12 @@ final class SceneMaterialFactory {
         return material;
     }
 
+    /**
+     * Creates or retrieves a solid-color material.
+     *
+     * @param object world object rendered without a texture
+     * @return cached solid material
+     */
     private PhongMaterial createSolidObjectMaterial(WorldObject object) {
         String key = object.getColor() + "|" + object.getType();
         PhongMaterial cachedMaterial = solidObjectMaterials.get(key);
@@ -88,6 +117,15 @@ final class SceneMaterialFactory {
         return material;
     }
 
+    /**
+     * Creates a material from a texture, or falls back to a solid material if loading fails.
+     *
+     * @param textureFileName texture file under {@code /textures}
+     * @param fallbackDiffuseColor diffuse color used when the texture is unavailable
+     * @param specularColor specular highlight color
+     * @param specularPower specular highlight power
+     * @return configured material
+     */
     private PhongMaterial createTexturedMaterial(
             String textureFileName,
             Color fallbackDiffuseColor,
@@ -104,6 +142,14 @@ final class SceneMaterialFactory {
         return material;
     }
 
+    /**
+     * Creates a plain Phong material.
+     *
+     * @param diffuseColor diffuse material color
+     * @param specularColor specular highlight color
+     * @param specularPower specular highlight power
+     * @return configured material
+     */
     private PhongMaterial createMaterial(Color diffuseColor, Color specularColor, double specularPower) {
         PhongMaterial material = new PhongMaterial();
         material.setDiffuseColor(diffuseColor);
@@ -112,6 +158,13 @@ final class SceneMaterialFactory {
         return material;
     }
 
+    /**
+     * Parses a JavaFX color string.
+     *
+     * @param colorValue RGB hex value or JavaFX color name
+     * @param fallbackColor color used when parsing fails
+     * @return parsed color or fallback color
+     */
     private Color parseColor(String colorValue, Color fallbackColor) {
         try {
             return Color.web(colorValue);
@@ -121,6 +174,12 @@ final class SceneMaterialFactory {
         }
     }
 
+    /**
+     * Chooses specular color according to the object type.
+     *
+     * @param object world object to render
+     * @return specular color
+     */
     private Color getSpecularColor(WorldObject object) {
         return switch (object.getType()) {
             case CYLINDER -> Color.web("#E2E8EC");
@@ -129,6 +188,12 @@ final class SceneMaterialFactory {
         };
     }
 
+    /**
+     * Chooses specular power according to the object type.
+     *
+     * @param object world object to render
+     * @return specular power
+     */
     private double getSpecularPower(WorldObject object) {
         return switch (object.getType()) {
             case CYLINDER -> 48.0;
@@ -137,6 +202,12 @@ final class SceneMaterialFactory {
         };
     }
 
+    /**
+     * Loads a texture image from cache or resources.
+     *
+     * @param textureFileName texture file under {@code /textures}
+     * @return loaded texture image, or empty when unavailable
+     */
     private Optional<Image> loadTexture(String textureFileName) {
         if (textureFileName == null) {
             return Optional.empty();
@@ -152,6 +223,12 @@ final class SceneMaterialFactory {
         return texture;
     }
 
+    /**
+     * Loads a texture image from the application resources.
+     *
+     * @param textureFileName texture file under {@code /textures}
+     * @return loaded texture image, or empty when unavailable
+     */
     private Optional<Image> loadTextureResource(String textureFileName) {
         String resourcePath = TEXTURE_ROOT + textureFileName;
 

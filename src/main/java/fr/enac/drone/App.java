@@ -27,6 +27,9 @@ import javafx.stage.Stage;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * JavaFX entry point that wires the model, controller, view, persistence, and game loop.
+ */
 public class App extends Application {
 
     private static final String DEFAULT_WORLD_FILENAME = "world_default";
@@ -56,6 +59,17 @@ public class App extends Application {
     private DroneController controller;
     private SimulationView view;
 
+    /**
+     * Creates the JavaFX application instance.
+     */
+    public App() {
+    }
+
+    /**
+     * Builds the primary window and initializes the first simulation session.
+     *
+     * @param primaryStage JavaFX primary stage
+     */
     @Override
     public void start(Stage primaryStage) {
 
@@ -82,6 +96,9 @@ public class App extends Application {
         initializeSimulation();
     }
 
+    /**
+     * Loads the default world, creating it on disk if it is missing.
+     */
     private void loadOrCreateDefaultWorld() {
         try {
             worldConfig = WorldPersistence.loadWorldConfiguration(DEFAULT_WORLD_FILENAME);
@@ -99,6 +116,9 @@ public class App extends Application {
         }
     }
 
+    /**
+     * Recreates simulation components and starts the game loop for the current world.
+     */
     private void initializeSimulation() {
 
         stopGameLoop();
@@ -155,11 +175,17 @@ public class App extends Application {
         startGameLoop();
     }
 
+    /**
+     * Stops the active game loop and controller services.
+     */
     private void stopGameLoop() {
         if (gameLoop != null) gameLoop.stop();
         stopController();
     }
 
+    /**
+     * Stops and clears the current controller.
+     */
     private void stopController() {
         if (controller != null) {
             controller.stop();
@@ -167,6 +193,9 @@ public class App extends Application {
         }
     }
 
+    /**
+     * Creates the model, controller, view, and initial UI bindings.
+     */
     private void createMvcComponents() {
 
         WorldCollisionDetector collisionDetector = new WorldCollisionDetector(worldConfig);
@@ -214,6 +243,9 @@ public class App extends Application {
         root.setCenter(view.getRoot());
     }
 
+    /**
+     * Registers keyboard and settings-drawer event handlers for the current scene.
+     */
     private void setupEventHandlers() {
 
         Objects.requireNonNull(view).getRoot().requestFocus();
@@ -247,6 +279,11 @@ public class App extends Application {
         });
     }
 
+    /**
+     * Handles key-press commands and forwards flight keys to the controller.
+     *
+     * @param event key event to process
+     */
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
 
@@ -282,6 +319,9 @@ public class App extends Application {
         }
     }
 
+    /**
+     * Cycles the simulation between ready, running, and paused states.
+     */
     private void toggleStartPauseResume() {
         switch (simulationState) {
             case READY -> setSimulationState(SimulationState.RUNNING);
@@ -290,11 +330,17 @@ public class App extends Application {
         }
     }
 
+    /**
+     * Pauses the running simulation while preserving model state.
+     */
     private void pauseSimulationSession() {
         controller.clearKeys();
         setSimulationState(SimulationState.PAUSED);
     }
 
+    /**
+     * Resets the current session to the world spawn and ready state.
+     */
     private void resetSimulationSession() {
         controller.clearKeys();
         controller.setAutopilot(null);
@@ -304,6 +350,9 @@ public class App extends Application {
         setSimulationState(SimulationState.READY);
     }
 
+    /**
+     * Moves the drone back to the configured world spawn point.
+     */
     private void resetDroneToWorldSpawn() {
         DroneSpawn spawn = worldConfig.getDroneSpawn();
 
@@ -315,6 +364,11 @@ public class App extends Application {
         );
     }
 
+    /**
+     * Sets the simulation lifecycle state and refreshes the view.
+     *
+     * @param simulationState new simulation state
+     */
     private void setSimulationState(SimulationState simulationState) {
         this.simulationState =
                 Objects.requireNonNull(
@@ -328,17 +382,28 @@ public class App extends Application {
         }
     }
 
+    /**
+     * Stops simulation work and exits the JavaFX platform.
+     */
     private void closeApplication() {
         stopGameLoop();
         Platform.exit();
     }
 
+    /**
+     * Starts the animation-timer game loop.
+     */
     private void startGameLoop() {
 
         gameLoop = new AnimationTimer() {
 
             private long lastUpdate = 0;
 
+            /**
+             * Advances input, physics, and rendering for one JavaFX pulse.
+             *
+             * @param now current time in nanoseconds
+             */
             @Override
             public void handle(long now) {
 
@@ -392,6 +457,11 @@ public class App extends Application {
         gameLoop.start();
     }
 
+    /**
+     * Updates command help when the active input device changes.
+     *
+     * @param newDevice newly detected input device
+     */
     private void handleInputDeviceChanged(InputDevice newDevice) {
         if (newDevice == currentInputDevice) {
             return;
@@ -401,6 +471,12 @@ public class App extends Application {
         view.updateCommandHelp(currentInputDevice, settingsState.getKeyboardLayout());
     }
 
+    /**
+     * Applies a newly loaded or generated world and recreates the simulation session.
+     *
+     * @param config new world configuration
+     * @param filename world filename without extension
+     */
     private void handleWorldLoaded(WorldConfiguration config, String filename) {
 
         preserveDroneSettings();
@@ -413,6 +489,9 @@ public class App extends Application {
         initializeSimulation();
     }
 
+    /**
+     * Saves user-adjustable drone and minimap settings before rebuilding the view.
+     */
     private void preserveDroneSettings() {
         if (model == null) {
             return;
@@ -427,11 +506,19 @@ public class App extends Application {
         }
     }
 
+    /**
+     * Stops background simulation resources when the JavaFX application exits.
+     */
     @Override
     public void stop() {
         stopGameLoop();
     }
 
+    /**
+     * Launches the JavaFX application.
+     *
+     * @param args command-line arguments
+     */
     public static void main(String[] args) {
         launch(args);
     }

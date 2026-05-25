@@ -29,6 +29,9 @@ public class TelemetryPanel extends HBox {
     /** Small coloured pill that shows ARMED / DISARMED */
     private final Label armedLabel = new Label("DISARMED");
 
+    /**
+     * Creates the top HUD telemetry panel.
+     */
     public TelemetryPanel() {
         setAlignment(Pos.CENTER);
         setSpacing(34);
@@ -53,6 +56,11 @@ public class TelemetryPanel extends HBox {
                 verticalSpeedItem, headingItem, distanceItem, batteryIndicator);
     }
 
+    /**
+     * Refreshes all telemetry labels and the flight-state status pill.
+     *
+     * @param telemetry telemetry snapshot to display
+     */
     public void update(DroneTelemetry telemetry) {
         altitudeItem.setValue(String.format(Locale.US, "%.1f m",   telemetry.altitudeMeters()));
         horizontalSpeedItem.setValue(String.format(Locale.US, "%.1f m/s", telemetry.horizontalSpeedMs()));

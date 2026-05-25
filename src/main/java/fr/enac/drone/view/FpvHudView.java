@@ -33,6 +33,9 @@ public class FpvHudView extends StackPane {
     private final ProximityWarningOverlay proximityOverlay;
     private final Label simulationStateLabel;
 
+    /**
+     * Creates the complete FPV HUD overlay.
+     */
     public FpvHudView() {
         telemetryPanel = new TelemetryPanel();
         commandHelpPanel = new CommandHelpPanel();
@@ -75,6 +78,11 @@ public class FpvHudView extends StackPane {
         updateSimulationState(SimulationState.READY);
     }
 
+    /**
+     * Creates the pill label used to display the simulation lifecycle state.
+     *
+     * @return configured state label
+     */
     private Label createSimulationStateLabel() {
         Label label = new Label();
         label.setFont(Font.font("System", FontWeight.BOLD, 12));
@@ -89,6 +97,7 @@ public class FpvHudView extends StackPane {
      *
      * @param model       the drone model containing current state
      * @param worldConfig the world configuration (obstacles, ground, etc.)
+     * @param simulationState current lifecycle state of the simulation
      */
     public void update(
             DroneModel model,
@@ -107,11 +116,22 @@ public class FpvHudView extends StackPane {
         }
     }
 
+    /**
+     * Updates the visual simulation state indicator.
+     *
+     * @param simulationState state to display
+     */
     public void updateSimulationState(SimulationState simulationState) {
         simulationStateLabel.setText("Simulation: " + simulationState.name());
         simulationStateLabel.setStyle(getSimulationStateStyle(simulationState));
     }
 
+    /**
+     * Builds the CSS style for the simulation state indicator.
+     *
+     * @param simulationState state to style
+     * @return JavaFX CSS string
+     */
     private String getSimulationStateStyle(SimulationState simulationState) {
         String accentColor = switch (simulationState) {
             case READY -> "#b8c7d9";
@@ -152,10 +172,20 @@ public class FpvHudView extends StackPane {
         miniMapView.adjustZoom(delta);
     }
 
+    /**
+     * Returns the current minimap zoom radius.
+     *
+     * @return minimap zoom radius in meters
+     */
     public double getMinimapZoom() {
         return miniMapView.getZoom();
     }
 
+    /**
+     * Sets the minimap zoom radius.
+     *
+     * @param zoom zoom radius in meters
+     */
     public void setMinimapZoom(double zoom) {
         miniMapView.setZoom(zoom);
     }
@@ -177,11 +207,22 @@ public class FpvHudView extends StackPane {
         proximityOverlay.clear();
     }
 
+    /**
+     * Shows or hides the command help panel.
+     *
+     * @param visible {@code true} to show the command help
+     */
     public void setCommandHelpVisible(boolean visible) {
         commandHelpPanel.setVisible(visible);
         commandHelpPanel.setManaged(visible);
     }
 
+    /**
+     * Refreshes command help labels for the active input device and keyboard layout.
+     *
+     * @param device active input device
+     * @param layout active keyboard layout
+     */
     public void updateCommandHelp(InputDevice device, KeyboardLayout layout) {
         if (commandHelpPanel != null) {
             commandHelpPanel.updateHelpText(device, layout);

@@ -9,7 +9,7 @@ import java.util.Random;
 import fr.enac.drone.model.drone.DroneSpawn;
 
 /**
- * Represents the configuration and objects in the world that can be saved/loaded.
+ * Represents the persisted world configuration, including objects, environment, and spawn point.
  * This is separate from the drone's physics state.
  */
 public class WorldConfiguration {
@@ -18,6 +18,9 @@ public class WorldConfiguration {
     private List<WorldObject> objects;
     private WorldEnvironment environment;
 
+    /**
+     * Creates the default world configuration.
+     */
     public WorldConfiguration() {
         this.worldName = "Default World";
         this.droneSpawn = new DroneSpawn();
@@ -26,6 +29,11 @@ public class WorldConfiguration {
         updateSpawnBase();
     }
 
+    /**
+     * Creates a default world with a custom display name.
+     *
+     * @param worldName non-empty world name
+     */
     public WorldConfiguration(String worldName) {
         setWorldName(worldName);
         this.droneSpawn = new DroneSpawn();
@@ -34,11 +42,21 @@ public class WorldConfiguration {
         updateSpawnBase();
     }
 
-    // Getters and Setters with validation
+    /**
+     * Returns the world display name.
+     *
+     * @return world name
+     */
     public String getWorldName() {
         return worldName;
     }
 
+    /**
+     * Sets the world display name.
+     *
+     * @param worldName non-empty world name
+     * @throws IllegalArgumentException if the name is blank
+     */
     public void setWorldName(String worldName) {
         if (worldName == null || worldName.trim().isEmpty()) {
             throw new IllegalArgumentException("World name cannot be null or empty");
@@ -46,35 +64,73 @@ public class WorldConfiguration {
         this.worldName = worldName;
     }
 
+    /**
+     * Returns the drone spawn configuration.
+     *
+     * @return spawn position and heading
+     */
     public DroneSpawn getDroneSpawn() {
         return droneSpawn;
     }
 
+    /**
+     * Sets the drone spawn configuration.
+     *
+     * @param droneSpawn non-null spawn configuration
+     */
     public void setDroneSpawn(DroneSpawn droneSpawn) {
         this.droneSpawn = Objects.requireNonNull(droneSpawn, "DroneSpawn cannot be null");
     }
 
+    /**
+     * Returns an immutable view of world objects.
+     *
+     * @return configured world objects
+     */
     public List<WorldObject> getObjects() {
         return Collections.unmodifiableList(objects);
     }
 
+    /**
+     * Replaces all world objects.
+     *
+     * @param objects new object list
+     */
     public void setObjects(List<WorldObject> objects) {
         this.objects = new ArrayList<>(Objects.requireNonNull(objects, "Objects list cannot be null"));
     }
 
+    /**
+     * Adds an object to the world configuration.
+     *
+     * @param obj object to add
+     */
     public void addObject(WorldObject obj) {
         Objects.requireNonNull(obj, "Object cannot be null");
         this.objects.add(obj);
     }
 
+    /**
+     * Returns environmental rendering and physics settings.
+     *
+     * @return world environment settings
+     */
     public WorldEnvironment getEnvironment() {
         return environment;
     }
 
+    /**
+     * Replaces environmental settings.
+     *
+     * @param environment non-null environment settings
+     */
     public void setEnvironment(WorldEnvironment environment) {
         this.environment = Objects.requireNonNull(environment, "Environment cannot be null");
     }
 
+    /**
+     * Rebuilds the visible spawn platform so it matches the configured spawn point.
+     */
     public void updateSpawnBase() {
         if (this.droneSpawn == null || this.objects == null) return;
 
@@ -93,6 +149,11 @@ public class WorldConfiguration {
         this.objects.add(spawnBase);
     }
 
+    /**
+     * Replaces generated obstacles while keeping the ground plane and spawn base.
+     *
+     * @param obstacleCount number of random cylindrical obstacles to generate
+     */
     public void generateRandomObstacles(int obstacleCount) {
         List<WorldObject> newObjects = new ArrayList<>();
 
@@ -141,6 +202,11 @@ public class WorldConfiguration {
         setObjects(newObjects);
     }
 
+    /**
+     * Creates the initial ground plane and reference tower.
+     *
+     * @return default world object list
+     */
     private List<WorldObject> createDefaultObjects() {
         List<WorldObject> defaultObjects = new ArrayList<>();
         
@@ -160,6 +226,11 @@ public class WorldConfiguration {
         return defaultObjects;
     }
 
+    /**
+     * Returns a debug summary of the world configuration.
+     *
+     * @return world name, object count, and environment
+     */
     @Override
     public String toString() {
         return "WorldConfiguration{" +

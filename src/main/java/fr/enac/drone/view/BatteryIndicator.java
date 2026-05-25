@@ -10,11 +10,17 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
+/**
+ * Compact HUD widget showing the current battery percentage as a colored bar.
+ */
 public class BatteryIndicator extends VBox {
     private final Rectangle batteryBar;
     private final Rectangle batteryBg;
     private final Label percentLabel;
 
+    /**
+     * Creates the battery indicator with its static label and progress bar.
+     */
     public BatteryIndicator() {
         Label title = new Label("BAT");
         title.setFont(Font.font("Monospaced", FontWeight.BOLD, 13));
@@ -59,6 +65,11 @@ public class BatteryIndicator extends VBox {
         getChildren().addAll(title, stack);
     }
 
+    /**
+     * Updates the displayed battery level.
+     *
+     * @param percent battery level from 0 to 100 percent
+     */
     public void update(double percent) {
         double clamped = Math.min(100.0, Math.max(0.0, percent));
         double width = 70 * (clamped / 100.0);

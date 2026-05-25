@@ -82,6 +82,15 @@ public class SettingsView extends StackPane {
     private Consumer<Boolean> onCommandHelpVisibilityChanged;
     private Consumer<KeyboardLayout> onKeyboardLayoutChanged;
 
+    /**
+     * Creates the settings drawer for the current simulation session.
+     *
+     * @param model drone model whose control settings can be changed
+     * @param currentConfig active world configuration
+     * @param currentConfigFilename active world filename without extension
+     * @param onWorldApplied callback invoked after applying a new world
+     * @param state persisted settings state
+     */
     public SettingsView(
             DroneModel model,
             WorldConfiguration currentConfig,
@@ -111,26 +120,54 @@ public class SettingsView extends StackPane {
         closeImmediately();
     }
 
+    /**
+     * Registers a callback invoked when the drawer opens.
+     *
+     * @param onOpened callback to run after opening
+     */
     public void setOnOpened(Runnable onOpened) {
         this.onOpened = onOpened;
     }
 
+    /**
+     * Registers a callback invoked when the drawer closes.
+     *
+     * @param onClosed callback to run after closing
+     */
     public void setOnClosed(Runnable onClosed) {
         this.onClosed = onClosed;
     }
     
+    /**
+     * Registers a callback for command help visibility changes.
+     *
+     * @param handler receives the new visibility flag
+     */
     public void setOnCommandHelpVisibilityChanged(Consumer<Boolean> handler) {
         this.onCommandHelpVisibilityChanged = handler;
     }
     
+    /**
+     * Registers a callback for keyboard layout changes.
+     *
+     * @param handler receives the selected keyboard layout
+     */
     public void setOnKeyboardLayoutChanged(Consumer<KeyboardLayout> handler) {
         this.onKeyboardLayoutChanged = handler;
     }
 
+    /**
+     * Returns whether the drawer is open or visible during its transition.
+     *
+     * @return {@code true} when the drawer is open or animating
+     */
     public boolean isOpen() {
         return open || drawer.isVisible();
     }
 
+    /**
+     * Opens the settings drawer.
+     */
     public void open() {
         if (open) {
             return;
@@ -153,6 +190,9 @@ public class SettingsView extends StackPane {
         }
     }
 
+    /**
+     * Closes the settings drawer.
+     */
     public void close() {
         if (!open) {
             return;
@@ -176,6 +216,11 @@ public class SettingsView extends StackPane {
         });
     }
 
+    /**
+     * Creates the transparent layer that catches clicks outside the drawer.
+     *
+     * @return click-outside layer
+     */
     private Region createClickOutsideLayer() {
         Region layer = new Region();
         layer.setStyle("-fx-background-color: rgba(0, 0, 0, 0.10);");
@@ -187,6 +232,11 @@ public class SettingsView extends StackPane {
         return layer;
     }
 
+    /**
+     * Creates the button used to open the settings drawer.
+     *
+     * @return configured settings button
+     */
     private Button createSettingsButton() {
         Button button = new Button();
         button.setFocusTraversable(false);
@@ -206,6 +256,11 @@ public class SettingsView extends StackPane {
         return button;
     }
 
+    /**
+     * Creates the gear icon used by the settings button.
+     *
+     * @return configured SVG path icon
+     */
     private SVGPath createSettingsIcon() {
         SVGPath icon = new SVGPath();
         icon.setContent(
@@ -229,6 +284,11 @@ public class SettingsView extends StackPane {
         return icon;
     }
 
+    /**
+     * Creates the sliding drawer panel.
+     *
+     * @return configured drawer container
+     */
     private VBox createDrawer() {
         VBox panel = new VBox(16);
         panel.setPrefWidth(DRAWER_WIDTH);
@@ -256,6 +316,12 @@ public class SettingsView extends StackPane {
         return panel;
     }
 
+    /**
+     * Creates the tab strip and content host for drawer sections.
+     *
+     * @param contentHost host that receives the active section content
+     * @return tabbed settings container
+     */
     private VBox createSettingsTabs(StackPane contentHost) {
         VBox droneContent = createDroneContent();
         VBox worldContent = createWorldContent();
@@ -312,6 +378,13 @@ public class SettingsView extends StackPane {
         return tabs;
     }
 
+    /**
+     * Creates one tab button in the settings drawer.
+     *
+     * @param text visible tab text
+     * @param tabGroup group that enforces single selection
+     * @return configured toggle button
+     */
     private ToggleButton createSettingsTabButton(String text, ToggleGroup tabGroup) {
         ToggleButton button = new ToggleButton(text);
         button.setToggleGroup(tabGroup);
@@ -324,6 +397,12 @@ public class SettingsView extends StackPane {
         return button;
     }
 
+    /**
+     * Builds the CSS style for a tab button.
+     *
+     * @param selected whether the tab is selected
+     * @return JavaFX CSS string
+     */
     private String getSettingsTabStyle(boolean selected) {
         if (selected) {
             return "-fx-padding: 8 12;"
@@ -345,6 +424,12 @@ public class SettingsView extends StackPane {
                 + "-fx-cursor: hand;";
     }
 
+    /**
+     * Replaces the active settings content node.
+     *
+     * @param contentHost host whose children are replaced
+     * @param content new active content
+     */
     private void showSettingsContent(StackPane contentHost, Node content) {
         contentHost.getChildren().setAll(content);
         if (drawer != null) {
@@ -352,6 +437,11 @@ public class SettingsView extends StackPane {
         }
     }
 
+    /**
+     * Creates the drawer title bar.
+     *
+     * @return configured header row
+     */
     private HBox createHeader() {
         Label title = new Label("Settings");
         title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + HUD_TEXT + ";");
@@ -378,6 +468,13 @@ public class SettingsView extends StackPane {
         return header;
     }
 
+    /**
+     * Creates a section heading with an optional trailing action.
+     *
+     * @param titleText section title
+     * @param trailingAction node displayed at the right side of the header
+     * @return configured section header
+     */
     private HBox createSectionHeader(String titleText, Node trailingAction) {
         Label heading = new Label(titleText);
         heading.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + HUD_TEXT + ";");
@@ -390,6 +487,11 @@ public class SettingsView extends StackPane {
         return header;
     }
 
+    /**
+     * Creates the drone settings section.
+     *
+     * @return content for drone control settings
+     */
     private VBox createDroneContent() {
         VBox content = new VBox(18);
         content.setPadding(new Insets(18, 4, 8, 4));
@@ -457,6 +559,11 @@ public class SettingsView extends StackPane {
         return content;
     }
 
+    /**
+     * Creates the world loading and random-generation settings section.
+     *
+     * @return content for world settings
+     */
     private VBox createWorldContent() {
         VBox content = new VBox(16);
         content.setPadding(new Insets(18, 4, 8, 4));
@@ -561,6 +668,11 @@ public class SettingsView extends StackPane {
         return content;
     }
     
+    /**
+     * Creates the input and HUD settings section.
+     *
+     * @return content for controls settings
+     */
     private VBox createControlsContent() {
         VBox content = new VBox(18);
         content.setPadding(new Insets(18, 4, 8, 4));
@@ -616,6 +728,14 @@ public class SettingsView extends StackPane {
         return content;
     }
 
+    /**
+     * Creates a styled slider for numeric settings.
+     *
+     * @param min minimum slider value
+     * @param max maximum slider value
+     * @param value initial slider value
+     * @return configured slider
+     */
     private Slider createSlider(double min, double max, double value) {
         Slider slider = new Slider(min, max, value);
         slider.setFocusTraversable(false);
@@ -630,6 +750,14 @@ public class SettingsView extends StackPane {
         return slider;
     }
 
+    /**
+     * Creates a labeled slider block with the current formatted value.
+     *
+     * @param labelText field label text
+     * @param valueLabel label displaying the current value
+     * @param slider slider control
+     * @return configured slider block
+     */
     private VBox createSliderBlock(String labelText, Label valueLabel, Slider slider) {
         Label label = createFieldLabel(labelText);
         valueLabel.setStyle("-fx-text-fill: " + HUD_TEXT_MUTED + "; -fx-font-size: 12px;");
@@ -645,6 +773,14 @@ public class SettingsView extends StackPane {
         return block;
     }
 
+    /**
+     * Creates one random-world density option.
+     *
+     * @param text visible button text
+     * @param mode generation mode represented by the button
+     * @param densityGroup group that enforces single density selection
+     * @return configured density toggle button
+     */
     private ToggleButton createDensityButton(
             String text,
             WorldGenerationMode mode,
@@ -665,6 +801,11 @@ public class SettingsView extends StackPane {
         return button;
     }
 
+    /**
+     * Selects the density button that matches the persisted state.
+     *
+     * @param densityGroup density toggle group
+     */
     private void selectDensity(ToggleGroup densityGroup) {
         for (javafx.scene.control.Toggle toggle : densityGroup.getToggles()) {
             if (toggle.getUserData() == state.getSelectedWorldMode()) {
@@ -678,6 +819,13 @@ public class SettingsView extends StackPane {
         }
     }
 
+    /**
+     * Enables controls that match the selected world source.
+     *
+     * @param predefinedRadio radio indicating predefined-world mode
+     * @param configsCombo saved-world selector
+     * @param densityButtons random-world density button row
+     */
     private void updateWorldSourceControls(
             RadioButton predefinedRadio,
             ComboBox<String> configsCombo,
@@ -688,6 +836,12 @@ public class SettingsView extends StackPane {
         densityButtons.setDisable(predefinedSelected);
     }
 
+    /**
+     * Builds the CSS style for a random-world density button.
+     *
+     * @param selected whether the button is selected
+     * @return JavaFX CSS string
+     */
     private String getDensityButtonStyle(boolean selected) {
         if (selected) {
             return "-fx-padding: 8 9;"
@@ -709,12 +863,23 @@ public class SettingsView extends StackPane {
                 + "-fx-cursor: hand;";
     }
 
+    /**
+     * Creates a styled field label.
+     *
+     * @param text label text
+     * @return configured label
+     */
     private Label createFieldLabel(String text) {
         Label label = new Label(text);
         label.setStyle("-fx-text-fill: " + HUD_TEXT + "; -fx-font-size: 12px; -fx-font-weight: bold;");
         return label;
     }
 
+    /**
+     * Applies shared styling to a radio button.
+     *
+     * @param radioButton radio button to style
+     */
     private void styleRadioButton(RadioButton radioButton) {
         radioButton.setStyle(
                 "-fx-text-fill: " + HUD_TEXT + ";"
@@ -722,6 +887,11 @@ public class SettingsView extends StackPane {
         );
     }
 
+    /**
+     * Builds the shared CSS style for combo boxes.
+     *
+     * @return JavaFX CSS string
+     */
     private String getComboBoxStyle() {
         return "-fx-background-color: " + CONTROL_BACKGROUND + ";"
                 + "-fx-background-radius: 5;"
@@ -731,8 +901,19 @@ public class SettingsView extends StackPane {
                 + "-fx-font-size: 12px;";
     }
 
+    /**
+     * Creates a list cell for saved-world names.
+     *
+     * @return configured combo-box cell
+     */
     private ListCell<String> createConfigListCell() {
         return new ListCell<>() {
+            /**
+             * Refreshes cell text and style for the current saved-world item.
+             *
+             * @param item displayed filename
+             * @param empty whether the cell is empty
+             */
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -751,6 +932,11 @@ public class SettingsView extends StackPane {
         };
     }
 
+    /**
+     * Reloads saved-world filenames into the combo box and restores selection.
+     *
+     * @param configsCombo combo box to refresh
+     */
     private void refreshConfigsList(ComboBox<String> configsCombo) {
         String[] saves = WorldPersistence.listSaves();
         Arrays.sort(saves);
@@ -769,6 +955,13 @@ public class SettingsView extends StackPane {
         state.setSelectedWorldFilename(configsCombo.getValue());
     }
 
+    /**
+     * Applies the selected predefined or random world change.
+     *
+     * @param predefinedRadio radio indicating predefined-world mode
+     * @param configsCombo saved-world selector
+     * @param densityGroup random-world density toggle group
+     */
     private void applyWorldChange(
             RadioButton predefinedRadio,
             ComboBox<String> configsCombo,
@@ -781,6 +974,11 @@ public class SettingsView extends StackPane {
         }
     }
 
+    /**
+     * Loads the selected saved world and forwards it to the owning application.
+     *
+     * @param configsCombo saved-world selector
+     */
     private void loadSelectedWorld(ComboBox<String> configsCombo) {
         String selected = configsCombo.getValue();
         if (selected == null || selected.isBlank()) {
@@ -800,6 +998,11 @@ public class SettingsView extends StackPane {
         }
     }
 
+    /**
+     * Generates random obstacles using the selected density and reapplies the world.
+     *
+     * @param densityGroup random-world density toggle group
+     */
     private void generateRandomWorld(ToggleGroup densityGroup) {
         if (densityGroup.getSelectedToggle() == null) {
             showError("Please select a density.");
@@ -811,6 +1014,11 @@ public class SettingsView extends StackPane {
         onWorldApplied.accept(currentConfig, currentConfigFilename);
     }
 
+    /**
+     * Shows an error dialog from the settings drawer.
+     *
+     * @param message message to display
+     */
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Settings");
@@ -819,6 +1027,9 @@ public class SettingsView extends StackPane {
         alert.showAndWait();
     }
 
+    /**
+     * Places the drawer in the closed state without animation.
+     */
     private void closeImmediately() {
         open = false;
         drawer.setTranslateX(CLOSED_TRANSLATE_X);
@@ -830,6 +1041,12 @@ public class SettingsView extends StackPane {
         settingsButton.setMouseTransparent(false);
     }
 
+    /**
+     * Runs the drawer slide animation.
+     *
+     * @param targetX drawer target translation
+     * @param onFinished callback invoked after the transition finishes
+     */
     private void runTransition(double targetX, Runnable onFinished) {
         transition = new TranslateTransition(Duration.millis(180), drawer);
         transition.setToX(targetX);
@@ -842,6 +1059,9 @@ public class SettingsView extends StackPane {
         transition.play();
     }
 
+    /**
+     * Stops any active drawer slide animation.
+     */
     private void stopTransition() {
         if (transition != null) {
             transition.stop();
@@ -849,10 +1069,22 @@ public class SettingsView extends StackPane {
         }
     }
 
+    /**
+     * Formats a multiplier as a percentage.
+     *
+     * @param value multiplier value
+     * @return formatted percentage text
+     */
     private String formatPercent(double value) {
         return String.format("%.0f%%", value * 100.0);
     }
 
+    /**
+     * Formats a speed in meters per second.
+     *
+     * @param value speed in meters per second
+     * @return formatted speed text
+     */
     private String formatMetersPerSecond(double value) {
         return String.format("%.0f m/s", value);
     }

@@ -11,6 +11,11 @@ public class WorldCollisionDetector {
 
     private final WorldConfiguration worldConfig;
 
+    /**
+     * Creates a detector for the active world configuration.
+     *
+     * @param worldConfig world objects used for collision checks
+     */
     public WorldCollisionDetector(WorldConfiguration worldConfig) {
         this.worldConfig = worldConfig;
     }
@@ -18,6 +23,9 @@ public class WorldCollisionDetector {
     /**
      * Estimates the highest surface Y-coordinate directly below the drone.
      * Useful for dynamic landing and ground-effect calculations (simulating a downward sensor).
+     *
+     * @param drone drone to query against the world
+     * @return closest surface Y coordinate below the drone, or {@code 0.0} when none is found
      */
     public double getGroundHeightBelow(DroneModel drone) {
         double droneY = drone.getY();
@@ -45,6 +53,9 @@ public class WorldCollisionDetector {
 
     /**
      * Searches for the first collision between the drone and any solid object.
+     *
+     * @param drone drone to test
+     * @return collision information, or {@code null} when there is no collision
      */
     public WorldCollision findCollision(DroneModel drone) {
         for (WorldObject object : worldConfig.getObjects()) {
@@ -101,6 +112,10 @@ public class WorldCollisionDetector {
      * Detects whether the drone has penetrated the ground plane.
      * The drone is considered to collide with the ground when its bottom
      * goes below the top surface of the plane.
+     *
+     * @param drone drone to test
+     * @param ground ground plane object
+     * @return ground collision information, or {@code null}
      */
     private WorldCollision checkGroundCollision(
             DroneModel drone,
@@ -132,9 +147,13 @@ public class WorldCollisionDetector {
     }
 
     /**
-    * Detects vertical contact with a solid world object.
-    * The returned normal points toward the closest vertical exit direction.
-    */
+     * Detects vertical contact with a solid world object.
+     * The returned normal points toward the closest vertical exit direction.
+     *
+     * @param drone drone to test
+     * @param object solid object to test
+     * @return vertical collision information, or {@code null}
+     */
     private WorldCollision checkVerticalCollision(
             DroneModel drone,
             WorldObject object
@@ -180,8 +199,12 @@ public class WorldCollisionDetector {
     }
 
     /**
-    * Checks whether the drone footprint overlaps the object's footprint.
-    */
+     * Checks whether the drone footprint overlaps the object's footprint.
+     *
+     * @param drone drone to test
+     * @param object object footprint to test
+     * @return {@code true} when the footprints overlap horizontally
+     */
     private boolean isHorizontallyOverObject(
             DroneModel drone,
             WorldObject object
@@ -205,6 +228,13 @@ public class WorldCollisionDetector {
         return false;
     }
 
+    /**
+     * Checks whether the drone footprint overlaps a box-like footprint.
+     *
+     * @param drone drone to test
+     * @param object box or plane footprint to test
+     * @return {@code true} when the expanded box footprint contains the drone center
+     */
     private boolean isHorizontallyOverBoxFootprint(
             DroneModel drone,
             WorldObject object
@@ -222,6 +252,10 @@ public class WorldCollisionDetector {
 
     /**
      * Checks whether the drone and the object overlap on the vertical axis.
+     *
+     * @param drone drone to test
+     * @param object object to test
+     * @return {@code true} when their vertical spans overlap
      */
     private boolean hasVerticalOverlap(DroneModel drone, WorldObject object) {
         double droneHalfHeight = drone.getDroneHeight() / 2.0;
@@ -238,8 +272,12 @@ public class WorldCollisionDetector {
     }
 
     /**
-    * Checks horizontal collision between the drone and a cylindrical object.
-    */
+     * Checks horizontal collision between the drone and a cylindrical object.
+     *
+     * @param drone drone to test
+     * @param object cylindrical object to test
+     * @return horizontal collision information, or {@code null}
+     */
     private WorldCollision checkCylinderCollision(DroneModel drone, WorldObject object) {
         double dx = drone.getX() - object.getPosX();
         double dz = drone.getZ() - object.getPosZ();
@@ -270,8 +308,12 @@ public class WorldCollisionDetector {
     }
 
     /**
-    * Checks horizontal collision between the drone and a box object.
-    */
+     * Checks horizontal collision between the drone and a box object.
+     *
+     * @param drone drone to test
+     * @param object box object to test
+     * @return horizontal collision information, or {@code null}
+     */
     private WorldCollision checkBoxCollision(
             DroneModel drone,
             WorldObject object
@@ -300,6 +342,13 @@ public class WorldCollisionDetector {
         return new WorldCollision(0.0, 0.0, normalZ, overlapZ);
     }
 
+    /**
+     * Selects the collision with the smaller penetration depth.
+     *
+     * @param first first candidate collision
+     * @param second second candidate collision
+     * @return shallowest non-null collision, or {@code null}
+     */
     private WorldCollision getShallowestCollision(
             WorldCollision first,
             WorldCollision second

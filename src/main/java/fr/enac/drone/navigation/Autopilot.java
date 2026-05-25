@@ -4,6 +4,9 @@ import fr.enac.drone.model.WorldPosition2D;
 
 import java.util.List;
 
+/**
+ * Converts a path of world waypoints into normalized flight-control commands.
+ */
 public class Autopilot {
     private static final double WAYPOINT_RADIUS = 5.0;
     private static final double FINAL_BRAKE_DISTANCE = 15.0;
@@ -15,14 +18,32 @@ public class Autopilot {
     private final List<WorldPosition2D> waypoints;
     private int currentIdx = 0;
 
+    /**
+     * Creates an autopilot over the supplied waypoint list.
+     *
+     * @param waypoints ordered X/Z waypoints to follow
+     */
     public Autopilot(List<WorldPosition2D> waypoints) {
         this.waypoints = waypoints;
     }
 
+    /**
+     * Returns whether there are remaining waypoints to follow.
+     *
+     * @return {@code true} while the autopilot still has a target
+     */
     public boolean isActive() {
         return currentIdx < waypoints.size();
     }
 
+    /**
+     * Computes the control command needed to fly toward the current waypoint.
+     *
+     * @param currentX current drone X coordinate
+     * @param currentZ current drone Z coordinate
+     * @param currentYawDeg current drone heading in degrees
+     * @return normalized control command for the next simulation tick
+     */
     public FlightControlCommand computeControls(double currentX, double currentZ, double currentYawDeg) {
         if (!isActive()) return FlightControlCommand.NEUTRAL;
 
@@ -52,6 +73,15 @@ public class Autopilot {
         return new FlightControlCommand(yawInput, forwardInput, lateralInput);
     }
 
+    /**
+     * Computes forward/lateral power with braking near the final target or sharp corners.
+     *
+     * @param currentX current drone X coordinate
+     * @param currentZ current drone Z coordinate
+     * @param target active waypoint
+     * @param dist distance to the active waypoint
+     * @return normalized movement power
+     */
     private double computePower(double currentX, double currentZ, WorldPosition2D target, double dist) {
         if (currentIdx == waypoints.size() - 1) {
             if (dist < FINAL_BRAKE_DISTANCE) {
@@ -76,6 +106,12 @@ public class Autopilot {
         return 1.0;
     }
 
+    /**
+     * Normalizes an angular difference to the range {@code (-180, 180]} degrees.
+     *
+     * @param angle angle difference in degrees
+     * @return normalized angular difference
+     */
     private double normalizeDegrees(double angle) {
         while (angle > 180) angle -= 360;
         while (angle <= -180) angle += 360;

@@ -10,6 +10,9 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
+/**
+ * Wraps game controller polling and maps controller state to simulator inputs.
+ */
 public class JoystickService {
     private ControllerManager controllers;
     private double verticalInput = 0;
@@ -26,13 +29,25 @@ public class JoystickService {
     private boolean resetWasPressed = false;
     private double zoomInput = 0.0;
 
+    /**
+     * Creates the controller manager used by Jamepad.
+     */
     public JoystickService() {
         controllers = new ControllerManager();
     }
 
+    /**
+     * Initializes SDL gamepad support and loads bundled controller mappings.
+     */
     public void start() {
         PrintStream originalErr = System.err;
         System.setErr(new PrintStream(new OutputStream() {
+            /**
+             * Discards a byte while SDL initialization output is muted.
+             *
+             * @param b ignored byte
+             */
+            @Override
             public void write(int b) {}
         }));
         try {
@@ -41,7 +56,7 @@ public class JoystickService {
             System.setErr(originalErr);
         }
 
-        // 2. Load and inject custom mappings
+        // Load and inject custom mappings.
         try {
             InputStream is = getClass().getResourceAsStream("/gamecontrollerdb.txt");
             if (is != null) {
@@ -57,11 +72,17 @@ public class JoystickService {
         System.out.println("Joystick service started.");
     }
 
+    /**
+     * Releases SDL gamepad resources.
+     */
     public void stop() {
         controllers.quitSDLGamepad();
         System.out.println("Joystick service stopped.");
     }
 
+    /**
+     * Polls the first connected controller and updates normalized input fields.
+     */
     public void update() {
         controllers.update();
         ControllerState state = controllers.getState(0); // Get the first controller (index 0)
@@ -97,6 +118,13 @@ public class JoystickService {
         }
     }
 
+    /**
+     * Applies a symmetric deadzone and rescales the remaining analog range.
+     *
+     * @param value raw axis value
+     * @param deadzone ignored center range
+     * @return normalized post-deadzone value
+     */
     private double applyDeadzone(double value, double deadzone) {
         if (Math.abs(value) < deadzone) {
             return 0.0;
@@ -106,18 +134,88 @@ public class JoystickService {
         return Math.signum(value) * Math.min(1.0, ((Math.abs(value) - deadzone) / (1.0 - deadzone)) * 1.2);
     }
 
+    /**
+     * Returns the normalized altitude axis value.
+     *
+     * @return vertical input in the range {@code [-1, 1]}
+     */
     public double getVerticalInput() { return verticalInput; }
+
+    /**
+     * Returns the normalized yaw axis value.
+     *
+     * @return yaw input in the range {@code [-1, 1]}
+     */
     public double getYawInput() { return yawInput; }
+
+    /**
+     * Returns the normalized forward axis value.
+     *
+     * @return forward input in the range {@code [-1, 1]}
+     */
     public double getForwardInput() { return forwardInput; }
+
+    /**
+     * Returns the normalized lateral axis value.
+     *
+     * @return lateral input in the range {@code [-1, 1]}
+     */
     public double getLateralInput() { return lateralInput; }
+
+    /**
+     * Returns whether the arm/takeoff button is pressed.
+     *
+     * @return {@code true} when the arm button is pressed
+     */
     public boolean isArmPressed() { return armPressed; }
+
+    /**
+     * Returns whether the return-to-home button is pressed.
+     *
+     * @return {@code true} when the home button is pressed
+     */
     public boolean isHomePressed() { return homePressed; }
+
+    /**
+     * Returns whether the land button is pressed.
+     *
+     * @return {@code true} when the land button is pressed
+     */
     public boolean isLandPressed() { return landPressed; }
+
+    /**
+     * Returns whether the emergency stop button is pressed.
+     *
+     * @return {@code true} when the emergency button is pressed
+     */
     public boolean isEmergencyPressed() { return emergencyPressed; }
+
+    /**
+     * Returns whether pause was pressed since the previous poll.
+     *
+     * @return {@code true} only on the rising edge of the pause button
+     */
     public boolean isPauseJustPressed() { return pausePressed && !pauseWasPressed; }
+
+    /**
+     * Returns whether reset was pressed since the previous poll.
+     *
+     * @return {@code true} only on the rising edge of the reset button
+     */
     public boolean isResetJustPressed() { return resetPressed && !resetWasPressed; }
+
+    /**
+     * Returns the normalized minimap zoom input.
+     *
+     * @return zoom input in the range {@code [-1, 1]}
+     */
     public double getZoomInput() { return zoomInput; }
     
+    /**
+     * Returns whether any controller axis or button is active.
+     *
+     * @return {@code true} when the controller currently provides input
+     */
     public boolean hasAnyInput() {
         return Math.abs(verticalInput) > 0
                 || Math.abs(yawInput) > 0

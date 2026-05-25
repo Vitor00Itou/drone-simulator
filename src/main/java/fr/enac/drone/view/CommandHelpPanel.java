@@ -20,6 +20,9 @@ import javafx.scene.text.FontWeight;
  */
 public class CommandHelpPanel extends VBox {
 
+    /**
+     * Creates the command help panel with default keyboard bindings.
+     */
     public CommandHelpPanel() {
         setAlignment(Pos.CENTER_LEFT);
         setSpacing(8);
@@ -35,6 +38,12 @@ public class CommandHelpPanel extends VBox {
         updateHelpText(InputDevice.KEYBOARD, KeyboardLayout.QWERTY);
     }
     
+    /**
+     * Rebuilds the displayed command rows for the current input source.
+     *
+     * @param device active input device
+     * @param layout active keyboard layout for keyboard controls
+     */
     public void updateHelpText(InputDevice device, KeyboardLayout layout) {
         getChildren().clear();
         
@@ -68,6 +77,13 @@ public class CommandHelpPanel extends VBox {
         }
     }
 
+    /**
+     * Creates a single command binding row.
+     *
+     * @param keys key or button label
+     * @param description command description
+     * @return configured row node
+     */
     private HBox createCommandRow(String keys, String description) {
         Label keyLabel = new Label(keys);
         keyLabel.setTextFill(Color.rgb(232, 230, 241));

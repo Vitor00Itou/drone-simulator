@@ -14,7 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Handles saving and loading world state to/from JSON files.
+ * Saves, loads, lists, and deletes world configurations stored as JSON files.
  */
 public class WorldPersistence {
     private static final Logger LOGGER = Logger.getLogger(WorldPersistence.class.getName());
@@ -31,9 +31,16 @@ public class WorldPersistence {
     }
 
     /**
-     * Validates filename to prevent path traversal attacks.
-     * @param filename The filename to validate
-     * @throws IllegalArgumentException if filename is invalid
+     * Creates a persistence helper instance.
+     */
+    public WorldPersistence() {
+    }
+
+    /**
+     * Validates a save filename to prevent path traversal attacks.
+     *
+     * @param filename filename without path separators
+     * @throws IllegalArgumentException if the filename is invalid
      */
     private static void validateFilename(String filename) {
         if (filename == null || filename.trim().isEmpty()) {
@@ -52,11 +59,12 @@ public class WorldPersistence {
     }
 
     /**
-     * Save world configuration to a JSON file.
-     * @param config The world configuration to save
-     * @param filename The filename (without .json extension)
-     * @throws IllegalArgumentException if config or filename is invalid
-     * @throws IOException if save fails
+     * Saves a world configuration to a JSON file.
+     *
+     * @param config world configuration to save
+     * @param filename filename without the {@code .json} extension
+     * @throws IllegalArgumentException if the configuration or filename is invalid
+     * @throws IOException if writing fails
      */
     public static void saveWorldConfiguration(WorldConfiguration config, String filename) throws IOException {
         Objects.requireNonNull(config, "Configuration cannot be null");
@@ -68,11 +76,12 @@ public class WorldPersistence {
     }
 
     /**
-     * Load world configuration from a JSON file.
-     * @param filename The filename (without .json extension)
-     * @return The loaded WorldConfiguration, or null if file doesn't exist
-     * @throws IllegalArgumentException if filename is invalid
-     * @throws IOException if load fails
+     * Loads a world configuration from a JSON file.
+     *
+     * @param filename filename without the {@code .json} extension
+     * @return loaded configuration, or {@code null} when the file does not exist
+     * @throws IllegalArgumentException if the filename is invalid
+     * @throws IOException if reading or parsing fails
      */
     public static WorldConfiguration loadWorldConfiguration(String filename) throws IOException {
         validateFilename(filename);
@@ -94,8 +103,9 @@ public class WorldPersistence {
     }
 
     /**
-     * Get list of available save files.
-     * @return Array of save file names (without .json extension)
+     * Lists available saved world configurations.
+     *
+     * @return save file names without the {@code .json} extension
      */
     public static String[] listSaves() {
         File dir = SAVES_DIRECTORY.toFile();
@@ -113,10 +123,11 @@ public class WorldPersistence {
     }
 
     /**
-     * Delete a save file.
-     * @param filename The filename (without .json extension)
-     * @return true if file was deleted, false otherwise
-     * @throws IllegalArgumentException if filename is invalid
+     * Deletes a saved world configuration.
+     *
+     * @param filename filename without the {@code .json} extension
+     * @return {@code true} if a file was deleted
+     * @throws IllegalArgumentException if the filename is invalid
      */
     public static boolean deleteSave(String filename) {
         validateFilename(filename);

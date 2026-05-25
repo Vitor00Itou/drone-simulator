@@ -16,6 +16,9 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
+/**
+ * Builds obstacle-aware 2D paths over the world X/Z plane using an A* grid search.
+ */
 public class PathPlanner {
     private static final double CELL_SIZE = 4.0;
     private static final double DRONE_HEIGHT_MARGIN = 2.0;
@@ -30,6 +33,11 @@ public class PathPlanner {
     private final double worldHalfSize;
     private final WorldConfiguration config;
 
+    /**
+     * Creates a planner for the supplied world configuration.
+     *
+     * @param config world configuration used to build obstacle grids
+     */
     public PathPlanner(WorldConfiguration config) {
         this.config = config;
         double worldSize = computeWorldSize(config);
@@ -38,6 +46,12 @@ public class PathPlanner {
         this.gridHeight = gridWidth;
     }
 
+    /**
+     * Computes the square world size needed to contain the configured objects.
+     *
+     * @param cfg source world configuration
+     * @return world size in meters
+     */
     private double computeWorldSize(WorldConfiguration cfg) {
         double max = 5000.0;
         for (WorldObject obj : cfg.getObjects()) {
@@ -52,6 +66,12 @@ public class PathPlanner {
         return max;
     }
 
+    /**
+     * Builds a grid map for the drone's current altitude.
+     *
+     * @param currentY current drone Y coordinate
+     * @return occupancy and penalty map
+     */
     private PathGridMap buildGridMap(double currentY) {
         PathGridMap map = new PathGridMap(gridWidth, gridHeight);
 
@@ -89,6 +109,16 @@ public class PathPlanner {
         return map;
     }
 
+    /**
+     * Computes the horizontal distance from a cell center to an object's footprint.
+     *
+     * @param cellX cell center X coordinate
+     * @param cellZ cell center Z coordinate
+     * @param obj obstacle object
+     * @param halfX object footprint half-width
+     * @param halfZ object footprint half-depth
+     * @return signed distance to the footprint boundary
+     */
     private double distanceToFootprint(double cellX, double cellZ, WorldObject obj, double halfX, double halfZ) {
         if (obj.isCylinder()) {
             return Math.hypot(cellX - obj.getPosX(), cellZ - obj.getPosZ()) - obj.getRadius();
@@ -99,14 +129,55 @@ public class PathPlanner {
         return Math.hypot(dx, dz);
     }
 
+    /**
+     * Converts a world X coordinate to a grid column.
+     *
+     * @param worldX world X coordinate
+     * @return grid column index
+     */
     private int worldToGridI(double worldX) { return (int) ((worldX + worldHalfSize) / CELL_SIZE); }
+
+    /**
+     * Converts a world Z coordinate to a grid row.
+     *
+     * @param worldZ world Z coordinate
+     * @return grid row index
+     */
     private int worldToGridJ(double worldZ) { return (int) ((worldZ + worldHalfSize) / CELL_SIZE); }
 
+    /**
+     * Converts a grid column to the world X coordinate at the cell center.
+     *
+     * @param i grid column index
+     * @return world X coordinate
+     */
     private double gridToWorldX(int i) { return (i + 0.5) * CELL_SIZE - worldHalfSize; }
+
+    /**
+     * Converts a grid row to the world Z coordinate at the cell center.
+     *
+     * @param j grid row index
+     * @return world Z coordinate
+     */
     private double gridToWorldZ(int j) { return (j + 0.5) * CELL_SIZE - worldHalfSize; }
 
+    /**
+     * Restricts an integer to a closed range.
+     *
+     * @param v value to restrict
+     * @param min minimum accepted value
+     * @param max maximum accepted value
+     * @return clamped value
+     */
     private int clamp(int v, int min, int max) { return Math.max(min, Math.min(max, v)); }
 
+    /**
+     * Removes unnecessary intermediate nodes while preserving obstacle clearance.
+     *
+     * @param pathNodes raw A* path nodes
+     * @param map occupancy map used for visibility checks
+     * @return simplified path in world coordinates
+     */
     private List<WorldPosition2D> simplifyPath(List<GridNode> pathNodes, PathGridMap map) {
         if (pathNodes.size() <= 2) {
             return pathNodes.stream().map(this::toWorldPosition).toList();
@@ -130,10 +201,24 @@ public class PathPlanner {
         return simplified;
     }
 
+    /**
+     * Converts a grid node to a world X/Z coordinate.
+     *
+     * @param node grid node
+     * @return world coordinate at the node center
+     */
     private WorldPosition2D toWorldPosition(GridNode node) {
         return new WorldPosition2D(gridToWorldX(node.i()), gridToWorldZ(node.j()));
     }
 
+    /**
+     * Checks whether two grid nodes can be connected without crossing blocked cells.
+     *
+     * @param a start grid node
+     * @param b end grid node
+     * @param map occupancy map
+     * @return {@code true} when the straight segment is clear
+     */
     private boolean hasLineOfSight(GridNode a, GridNode b, PathGridMap map) {
         double x0 = a.i() + 0.5;
         double y0 = a.j() + 0.5;
@@ -159,6 +244,14 @@ public class PathPlanner {
         return true;
     }
 
+    /**
+     * Finds the closest unblocked grid cell near a blocked target cell.
+     *
+     * @param startI target grid column
+     * @param startJ target grid row
+     * @param map occupancy map
+     * @return nearest unblocked node, or {@code null} when none is found nearby
+     */
     private GridNode findNearestUnblocked(int startI, int startJ, PathGridMap map) {
         Queue<GridNode> queue = new LinkedList<>();
         Set<GridNode> visited = new HashSet<>();
@@ -192,6 +285,16 @@ public class PathPlanner {
         return null;
     }
 
+    /**
+     * Finds a safe path from the drone position to a target X/Z coordinate.
+     *
+     * @param startX current drone X coordinate
+     * @param startY current drone Y coordinate
+     * @param startZ current drone Z coordinate
+     * @param targetX target X coordinate
+     * @param targetZ target Z coordinate
+     * @return simplified waypoint path, or an empty list when no path exists
+     */
     public List<WorldPosition2D> findPath(
             double startX,
             double startY,
@@ -275,6 +378,13 @@ public class PathPlanner {
         return Collections.emptyList();
     }
 
+    /**
+     * Estimates remaining grid distance for A* using octile movement costs.
+     *
+     * @param a source node
+     * @param b target node
+     * @return admissible grid-distance estimate
+     */
     private double heuristic(GridNode a, GridNode b) {
         int dx = Math.abs(a.i() - b.i());
         int dy = Math.abs(a.j() - b.j());

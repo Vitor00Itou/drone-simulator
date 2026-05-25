@@ -49,6 +49,9 @@ public class MiniMapView extends StackPane {
     private double lastTrailZ = 0;
     private boolean trailInitialized = false;
 
+    /**
+     * Creates the minimap canvas, circular frame, zoom slider, and mouse handlers.
+     */
     public MiniMapView() {
         setMinSize(MAP_SIZE, MAP_FRAME_HEIGHT);
         setPrefSize(MAP_SIZE, MAP_FRAME_HEIGHT);
@@ -92,30 +95,61 @@ public class MiniMapView extends StackPane {
         getChildren().addAll(canvas, zoomSlider);
     }
 
+    /**
+     * Registers a callback fired when the user selects a target on the minimap.
+     *
+     * @param callback receives the clicked world X/Z coordinate
+     */
     public void setOnTargetClicked(Consumer<WorldPosition2D> callback) {
         this.onTargetClicked = callback;
     }
 
+    /**
+     * Clears the currently displayed navigation target.
+     */
     public void clearTarget() {
         this.targetPos = null;
     }
 
+    /**
+     * Adjusts the minimap zoom radius.
+     *
+     * @param delta zoom radius delta in meters
+     */
     public void adjustZoom(double delta) {
         zoomSlider.setValue(zoomSlider.getValue() + delta);
     }
 
+    /**
+     * Returns the current minimap zoom radius.
+     *
+     * @return zoom radius in meters
+     */
     public double getZoom() {
         return viewRadius;
     }
 
+    /**
+     * Sets the minimap zoom radius.
+     *
+     * @param zoom zoom radius in meters
+     */
     public void setZoom(double zoom) {
         zoomSlider.setValue(zoom);
     }
 
+    /**
+     * Returns a copy of the recorded flight trail.
+     *
+     * @return trail points in world coordinates
+     */
     public List<WorldPosition2D> getTrail() {
         return new ArrayList<>(trailPoints);
     }
 
+    /**
+     * Clears the recorded flight trail.
+     */
     public void clearTrail() {
         trailPoints.clear();
         trailInitialized = false;
@@ -123,6 +157,11 @@ public class MiniMapView extends StackPane {
         lastTrailZ = 0;
     }
 
+    /**
+     * Converts a minimap click into a world-space target and notifies the listener.
+     *
+     * @param event mouse click event on the canvas
+     */
     private void handleMouseClicked(MouseEvent event) {
         if (onTargetClicked == null) return;
 
@@ -146,6 +185,13 @@ public class MiniMapView extends StackPane {
         onTargetClicked.accept(targetPos);
     }
 
+    /**
+     * Renders the minimap for the current model and world state.
+     *
+     * @param model drone model used as the minimap center
+     * @param config world configuration to draw
+     * @param simulationState current simulation lifecycle state
+     */
     public void render(
             DroneModel model,
             WorldConfiguration config,
@@ -227,6 +273,11 @@ public class MiniMapView extends StackPane {
         drawCompass(gc, model);
     }
 
+    /**
+     * Adds the drone's current X/Z position to the trail when it has moved enough.
+     *
+     * @param model drone model supplying the current position
+     */
     private void updateTrail(DroneModel model) {
         double cx = model.getX();
         double cz = model.getZ();
@@ -251,6 +302,12 @@ public class MiniMapView extends StackPane {
         }
     }
 
+    /**
+     * Draws the recorded flight trail.
+     *
+     * @param gc canvas graphics context
+     * @param scale world-to-canvas scale
+     */
     private void drawTrail(GraphicsContext gc, double scale) {
         if (trailPoints.size() <= 1) {
             return;
@@ -271,6 +328,12 @@ public class MiniMapView extends StackPane {
         gc.stroke();
     }
 
+    /**
+     * Draws all non-ground world objects on the minimap.
+     *
+     * @param gc canvas graphics context
+     * @param config world configuration to draw
+     */
     private void drawWorldObjects(GraphicsContext gc, WorldConfiguration config) {
         for (WorldObject obj : config.getObjects()) {
             if (obj.isPlane()) continue;
@@ -292,6 +355,12 @@ public class MiniMapView extends StackPane {
         }
     }
 
+    /**
+     * Draws the active navigation target cross.
+     *
+     * @param gc canvas graphics context
+     * @param scale world-to-canvas scale
+     */
     private void drawTarget(GraphicsContext gc, double scale) {
         if (targetPos == null) {
             return;
@@ -306,6 +375,11 @@ public class MiniMapView extends StackPane {
         gc.strokeLine(tx - crossSize, tz + crossSize, tx + crossSize, tz - crossSize);
     }
 
+    /**
+     * Draws the fixed center drone icon.
+     *
+     * @param gc canvas graphics context
+     */
     private void drawDroneIcon(GraphicsContext gc) {
         // 6. Draw the Drone Icon (Always fixed at the center, pointing UP)
         gc.setFill(Color.WHITE);
@@ -318,6 +392,12 @@ public class MiniMapView extends StackPane {
         gc.strokePolygon(xPoints, yPoints, 3);
     }
 
+    /**
+     * Draws cardinal direction labels around the minimap edge.
+     *
+     * @param gc canvas graphics context
+     * @param model drone model supplying heading
+     */
     private void drawCompass(GraphicsContext gc, DroneModel model) {
         // 7. Draw the Cardinal Points (N, S, E, W) rotating dynamically
         gc.save();

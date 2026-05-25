@@ -24,6 +24,9 @@ public class ProximityWarningOverlay extends StackPane {
     private final double[] phases = new double[8];
     private long lastTime = System.currentTimeMillis();
 
+    /**
+     * Creates the radar sectors and center crosshair used by the proximity HUD.
+     */
     public ProximityWarningOverlay() {
         setMouseTransparent(true);
         
@@ -62,12 +65,21 @@ public class ProximityWarningOverlay extends StackPane {
         getChildren().addAll(radarGroup, vLine, hLine);
     }
 
+    /**
+     * Hides all proximity warning sectors.
+     */
     public void clear() {
         for (Arc arc : arcs) {
             arc.setOpacity(0);
         }
     }
     
+    /**
+     * Updates sector colors and opacity based on nearby obstacles.
+     *
+     * @param drone drone model used as the radar origin
+     * @param worldConfig world configuration containing obstacles
+     */
     public void update(DroneModel drone, WorldConfiguration worldConfig) {
         long now = System.currentTimeMillis();
         double dt = (now - lastTime) / 1000.0;
