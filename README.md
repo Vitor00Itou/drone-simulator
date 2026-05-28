@@ -97,7 +97,7 @@ Here is an example of a valid world configuration JSON file:
 - **`droneSpawn`**: The starting coordinates `(posX, posY, posZ)` and orientation `yaw` for the drone. Note that the Y-axis might be inverted depending on the 3D engine used.
 - **`objects`**: An array of objects to spawn in the world.
   - `name`: Identifier for the object.
-  - `type`: Shape of the object (e.g., "plane", "cylinder", "cube").
+  - `type`: Shape of the object ["plane", "cylinder", "box"].
   - `posX`, `posY`, `posZ`: Position of the object.
   - `sizeX`, `sizeY`, `sizeZ`: Dimensions of the object.
   - `color`: Hex code representing the object's color.
