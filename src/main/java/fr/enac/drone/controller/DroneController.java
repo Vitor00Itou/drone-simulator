@@ -6,6 +6,7 @@ import java.util.Set;
 import fr.enac.drone.input.InputDevice;
 import fr.enac.drone.input.KeyboardLayout;
 import fr.enac.drone.model.drone.DroneModel;
+import fr.enac.drone.model.drone.FlightState;
 import fr.enac.drone.model.world.WorldCollision;
 import fr.enac.drone.model.world.WorldCollisionDetector;
 import fr.enac.drone.navigation.Autopilot;
@@ -305,7 +306,8 @@ public class DroneController {
 
         if (Math.abs(yawInput) > 0.001) {
             model.setManualYawInput(yawInput);
-        } else if (autopilot == null || !autopilot.isActive()) {
+        } else if ((autopilot == null || !autopilot.isActive())
+                && model.getFlightState() != FlightState.RETURNING_HOME) {
             model.clearTargetYaw();
         }
 

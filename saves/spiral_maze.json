@@ -1,0 +1,207 @@
+{
+  "worldName" : "Spiral Maze",
+  "droneSpawn" : {
+    "posX" : 208.0,
+    "posY" : -5.0,
+    "posZ" : 280.0,
+    "yaw" : 180.0
+  },
+  "objects" : [ {
+    "name" : "Ground",
+    "type" : "plane",
+    "posX" : 0.0,
+    "posY" : 0.0,
+    "posZ" : 0.0,
+    "sizeX" : 2000.0,
+    "sizeY" : 1.0,
+    "sizeZ" : 2000.0,
+    "color" : "#228B22"
+  }, {
+    "name" : "Finish Line",
+    "type" : "cylinder",
+    "posX" : 0.0,
+    "posY" : -1.0,
+    "posZ" : 0.0,
+    "sizeX" : 16.0,
+    "sizeY" : 2.0,
+    "sizeZ" : 16.0,
+    "color" : "#FFD700"
+  }, {
+    "name" : "Wall 1",
+    "type" : "box",
+    "posX" : 26.0,
+    "posY" : -20.0,
+    "posZ" : 0.0,
+    "sizeX" : 2.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 52.0,
+    "color" : "#D2B48C"
+  }, {
+    "name" : "Wall 2",
+    "type" : "box",
+    "posX" : 0.0,
+    "posY" : -20.0,
+    "posZ" : 26.0,
+    "sizeX" : 52.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 2.0,
+    "color" : "#CD853F"
+  }, {
+    "name" : "Wall 3",
+    "type" : "box",
+    "posX" : -26.0,
+    "posY" : -20.0,
+    "posZ" : -26.0,
+    "sizeX" : 2.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 104.0,
+    "color" : "#D2B48C"
+  }, {
+    "name" : "Wall 4",
+    "type" : "box",
+    "posX" : 26.0,
+    "posY" : -20.0,
+    "posZ" : -78.0,
+    "sizeX" : 104.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 2.0,
+    "color" : "#CD853F"
+  }, {
+    "name" : "Wall 5",
+    "type" : "box",
+    "posX" : 78.0,
+    "posY" : -20.0,
+    "posZ" : 0.0,
+    "sizeX" : 2.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 156.0,
+    "color" : "#D2B48C"
+  }, {
+    "name" : "Wall 6",
+    "type" : "box",
+    "posX" : 0.0,
+    "posY" : -20.0,
+    "posZ" : 78.0,
+    "sizeX" : 156.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 2.0,
+    "color" : "#CD853F"
+  }, {
+    "name" : "Wall 7",
+    "type" : "box",
+    "posX" : -78.0,
+    "posY" : -20.0,
+    "posZ" : -26.0,
+    "sizeX" : 2.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 208.0,
+    "color" : "#D2B48C"
+  }, {
+    "name" : "Wall 8",
+    "type" : "box",
+    "posX" : 26.0,
+    "posY" : -20.0,
+    "posZ" : -130.0,
+    "sizeX" : 208.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 2.0,
+    "color" : "#CD853F"
+  }, {
+    "name" : "Wall 9",
+    "type" : "box",
+    "posX" : 130.0,
+    "posY" : -20.0,
+    "posZ" : 0.0,
+    "sizeX" : 2.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 260.0,
+    "color" : "#D2B48C"
+  }, {
+    "name" : "Wall 10",
+    "type" : "box",
+    "posX" : 0.0,
+    "posY" : -20.0,
+    "posZ" : 130.0,
+    "sizeX" : 260.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 2.0,
+    "color" : "#CD853F"
+  }, {
+    "name" : "Wall 11",
+    "type" : "box",
+    "posX" : -130.0,
+    "posY" : -20.0,
+    "posZ" : -26.0,
+    "sizeX" : 2.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 312.0,
+    "color" : "#D2B48C"
+  }, {
+    "name" : "Wall 12",
+    "type" : "box",
+    "posX" : 26.0,
+    "posY" : -20.0,
+    "posZ" : -182.0,
+    "sizeX" : 312.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 2.0,
+    "color" : "#CD853F"
+  }, {
+    "name" : "Wall 13",
+    "type" : "box",
+    "posX" : 182.0,
+    "posY" : -20.0,
+    "posZ" : 0.0,
+    "sizeX" : 2.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 364.0,
+    "color" : "#D2B48C"
+  }, {
+    "name" : "Wall 14",
+    "type" : "box",
+    "posX" : 0.0,
+    "posY" : -20.0,
+    "posZ" : 182.0,
+    "sizeX" : 364.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 2.0,
+    "color" : "#CD853F"
+  }, {
+    "name" : "Wall 15",
+    "type" : "box",
+    "posX" : -182.0,
+    "posY" : -20.0,
+    "posZ" : -26.0,
+    "sizeX" : 2.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 416.0,
+    "color" : "#D2B48C"
+  }, {
+    "name" : "Wall 16",
+    "type" : "box",
+    "posX" : 26.0,
+    "posY" : -20.0,
+    "posZ" : -234.0,
+    "sizeX" : 416.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 2.0,
+    "color" : "#CD853F"
+  }, {
+    "name" : "Wall 17",
+    "type" : "box",
+    "posX" : 234.0,
+    "posY" : -20.0,
+    "posZ" : 0.0,
+    "sizeX" : 2.0,
+    "sizeY" : 40.0,
+    "sizeZ" : 468.0,
+    "color" : "#D2B48C"
+  } ],
+  "environment" : {
+    "skyColor" : "#87CEEB",
+    "groundColor" : "#228B22",
+    "gravity" : 9.81,
+    "showGrid" : false,
+    "showTower" : false
+  }
+}
