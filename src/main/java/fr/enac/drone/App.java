@@ -240,7 +240,7 @@ public class App extends Application {
             view.updateCommandHelp(currentInputDevice, layout);
         });
 
-        root.setCenter(view.getRoot());
+        root.setCenter(view);
     }
 
     /**
@@ -248,10 +248,10 @@ public class App extends Application {
      */
     private void setupEventHandlers() {
 
-        Objects.requireNonNull(view).getRoot().requestFocus();
+        Objects.requireNonNull(view).requestFocus();
 
         view.setSettingsDrawerOpenedHandler(controller::clearKeys);
-        view.setSettingsDrawerClosedHandler(() -> view.getRoot().requestFocus());
+        view.setSettingsDrawerClosedHandler(() -> view.requestFocus());
 
         if (settingsDismissFilter != null) {
             scene.removeEventFilter(KeyEvent.ANY, settingsDismissFilter);
@@ -264,7 +264,7 @@ public class App extends Application {
                     if (controller != null) {
                         controller.clearKeys();
                     }
-                    view.getRoot().requestFocus();
+                    view.requestFocus();
                 }
                 event.consume();
             }

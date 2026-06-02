@@ -8,6 +8,7 @@ import fr.enac.drone.model.drone.DroneModel;
 import fr.enac.drone.model.world.WorldConfiguration;
 import fr.enac.drone.model.world.WorldObject;
 import fr.enac.drone.view.settings.SettingsState;
+import javafx.beans.value.ChangeListener;
 import javafx.scene.AmbientLight;
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -31,12 +32,10 @@ import java.util.function.Consumer;
 
 /**
  * Handles the 3D rendering and FPV camera logic for the drone simulator.
- * The SubScene is bound to fill the entire window.
+ * The SubScene is bound to fill the available viewport.
  */
-public class SimulationView {
+public class SimulationView extends BorderPane {
     private static final double GROUND_TEXTURE_TILE_SIZE = 500.0;
-
-    private final BorderPane root;
 
     private final DroneModel model;
 
@@ -83,8 +82,7 @@ public class SimulationView {
                         "World configuration cannot be null"
                 );
 
-        this.root = new BorderPane();
-        this.root.setFocusTraversable(true);
+        setFocusTraversable(true);
         this.materialFactory = new SceneMaterialFactory();
 
         // ── 3D scene root ──────────────────────────────────────────────
@@ -150,6 +148,7 @@ public class SimulationView {
         // ── Responsive viewport ───────────────────────────────────────
         Pane sizingPane = new Pane();
 
+        // the SubScene automatically follows the size of the observable sizing pane.
         subScene.widthProperty().bind(
                 sizingPane.widthProperty()
         );
@@ -157,6 +156,15 @@ public class SimulationView {
         subScene.heightProperty().bind(
                 sizingPane.heightProperty()
         );
+
+        // this reacts only when the viewport size changes, instead of checking it
+        // continuously inside the animation loop.
+        ChangeListener<Number> viewportResizeListener =
+                (observable, oldValue, newValue) ->
+                        updateCameraForViewport(subScene.getWidth(), subScene.getHeight());
+
+        subScene.widthProperty().addListener(viewportResizeListener);
+        subScene.heightProperty().addListener(viewportResizeListener);
 
         StackPane viewport =
                 new StackPane(sizingPane, subScene);
@@ -174,15 +182,33 @@ public class SimulationView {
         );
         viewport.getChildren().add(settingsView);
 
-        // Root
-        root.setCenter(viewport);
+        // Since SimulationView now extends BorderPane, it can directly manage its center.
+        setCenter(viewport);
 
-        root.setMaxSize(
+        setMaxSize(
                 Double.MAX_VALUE,
                 Double.MAX_VALUE
         );
 
         render();
+    }
+
+    /**
+     * Updates camera parameters when the viewport size changes.
+     *
+     * This method is triggered by JavaFX property listeners, which keeps resize
+     * behavior event-driven and separate from the main simulation loop.
+     *
+     * @param width current viewport width
+     * @param height current viewport height
+     */
+    private void updateCameraForViewport(double width, double height) {
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+
+        double largestDimension = Math.max(width, height);
+        camera.setFarClip(Math.max(5000.0, largestDimension * 4.0));
     }
 
     /**
@@ -280,15 +306,6 @@ public class SimulationView {
             System.err.println("Invalid scene color '" + colorValue + "'. Using fallback color.");
             return fallbackColor;
         }
-    }
-
-    /**
-     * Returns the root node for insertion into the JavaFX scene.
-     *
-     * @return root border pane
-     */
-    public BorderPane getRoot() {
-        return root;
     }
 
     /**
